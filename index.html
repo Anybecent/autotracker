@@ -1,0 +1,2680 @@
+<!DOCTYPE html>
+<html lang="uk" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AutoTracker v1.0 — Автоматичний трекінг об'єктів у Adobe Premiere Pro</title>
+  <meta name="description" content="AutoTracker v1.0 — зручний плагін для автоматичного трекінгу об'єктів, прив'язки шарів та фіксації камери (Lock-on Center) прямо на таймлайні Adobe Premiere Pro." />
+  <style>
+    :root {
+      /* Dark Theme (Default) - Adobe Spectrum & Royal Purple Palette */
+      --bg-main: #141414;
+      --bg-card: #1e1e1e;
+      --bg-surface: #242424;
+      --bg-elevated: #2a2a2a;
+      --bg-glass: rgba(20, 20, 20, 0.86);
+      --text-primary: #f9fafb;
+      --text-secondary: #e5e7eb;
+      --text-muted: #9ca3af;
+      --accent-primary: #7c3aed;
+      --accent-hover: #8b5cf6;
+      --accent-light: rgba(124, 58, 237, 0.16);
+      --accent-border: rgba(139, 92, 246, 0.4);
+      --emerald: #10b981;
+      --emerald-light: rgba(16, 185, 129, 0.14);
+      --amber: #f59e0b;
+      --danger-muted: #ef4444;
+      --border-color: #2e2e2e;
+      --border-subtle: #262626;
+      --shadow-card: 0 12px 32px rgba(0, 0, 0, 0.45);
+      --shadow-glow: 0 0 40px rgba(124, 58, 237, 0.22);
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 16px;
+      --radius-xl: 22px;
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, "Helvetica Neue", Arial, sans-serif;
+      --font-mono: "JetBrains Mono", Consolas, "Courier New", monospace;
+    }
+
+    [data-theme="light"] {
+      --bg-main: #f3f4f6;
+      --bg-card: #ffffff;
+      --bg-surface: #f9fafb;
+      --bg-elevated: #eef0f4;
+      --bg-glass: rgba(243, 244, 246, 0.88);
+      --text-primary: #111827;
+      --text-secondary: #1f2937;
+      --text-muted: #4b5563;
+      --accent-primary: #7c3aed;
+      --accent-hover: #6d28d9;
+      --accent-light: rgba(124, 58, 237, 0.1);
+      --accent-border: rgba(124, 58, 237, 0.35);
+      --emerald: #059669;
+      --emerald-light: rgba(16, 185, 129, 0.12);
+      --amber: #d97706;
+      --danger-muted: #dc2626;
+      --border-color: #e5e7eb;
+      --border-subtle: #d1d5db;
+      --shadow-card: 0 10px 25px rgba(17, 24, 39, 0.07);
+      --shadow-glow: 0 0 35px rgba(124, 58, 237, 0.15);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background-color: var(--bg-main);
+      color: var(--text-secondary);
+      line-height: 1.6;
+      transition: background-color 0.25s ease, color 0.25s ease;
+      overflow-x: hidden;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 1220px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* ================= NAVBAR ================= */
+    .navbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--bg-glass);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border-color);
+      transition: background 0.25s ease, border-color 0.25s ease;
+    }
+
+    .navbar-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 70px;
+      gap: 16px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 700;
+      font-size: 1.2rem;
+      color: var(--text-primary);
+      letter-spacing: -0.02em;
+    }
+
+    .brand-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 9px;
+      background: linear-gradient(135deg, var(--accent-primary), var(--accent-hover));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      box-shadow: 0 4px 14px rgba(124, 58, 237, 0.38);
+      flex-shrink: 0;
+    }
+
+    .version-badge {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: var(--accent-light);
+      color: var(--accent-hover);
+      border: 1px solid var(--accent-border);
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      font-size: 0.92rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      transition: color 0.2s ease;
+    }
+
+    .nav-links a:hover {
+      color: var(--text-primary);
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .ctrl-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      height: 38px;
+      padding: 0 12px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-color);
+      background: var(--bg-surface);
+      color: var(--text-primary);
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .ctrl-btn:hover {
+      border-color: var(--accent-hover);
+      background: var(--bg-elevated);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 11px 22px;
+      border-radius: var(--radius-sm);
+      font-weight: 600;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: 1px solid transparent;
+      text-align: center;
+    }
+
+    .btn-primary {
+      background: var(--accent-primary);
+      color: #ffffff;
+      box-shadow: 0 4px 16px rgba(124, 58, 237, 0.35);
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 22px rgba(139, 92, 246, 0.45);
+    }
+
+    .btn-outline {
+      background: var(--bg-surface);
+      color: var(--text-primary);
+      border-color: var(--border-color);
+    }
+
+    .btn-outline:hover {
+      border-color: var(--accent-hover);
+      background: var(--bg-elevated);
+    }
+
+    .btn-sm {
+      padding: 8px 16px;
+      font-size: 0.86rem;
+    }
+
+    /* ================= HERO SECTION ================= */
+    .hero {
+      padding: 76px 0 88px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: "";
+      position: absolute;
+      top: -120px;
+      right: 5%;
+      width: 540px;
+      height: 540px;
+      background: radial-gradient(circle, rgba(124, 58, 237, 0.14) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .hero-grid {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: 1.02fr 1.08fr;
+      gap: 48px;
+      align-items: center;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: 999px;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 22px;
+    }
+
+    .eyebrow-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--emerald);
+      box-shadow: 0 0 8px var(--emerald);
+    }
+
+    .hero h1 {
+      font-size: clamp(2.15rem, 3.8vw, 3.25rem);
+      line-height: 1.14;
+      font-weight: 800;
+      color: var(--text-primary);
+      letter-spacing: -0.03em;
+      margin-bottom: 20px;
+    }
+
+    .hero h1 .highlight {
+      color: var(--accent-hover);
+    }
+
+    .hero-subtitle {
+      font-size: 1.08rem;
+      color: var(--text-muted);
+      margin-bottom: 30px;
+      max-width: 560px;
+    }
+
+    .hero-cta-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-bottom: 32px;
+    }
+
+    .hero-metrics {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border-color);
+    }
+
+    .metric-item strong {
+      display: block;
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: var(--text-primary);
+      margin-bottom: 2px;
+    }
+
+    .metric-item span {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+
+    /* Interactive Panel Mockup in Hero */
+    .demo-shell {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-card), var(--shadow-glow);
+      overflow: hidden;
+    }
+
+    .demo-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .window-dots {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .window-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--border-subtle);
+    }
+
+    .window-dot.purple {
+      background: var(--accent-hover);
+    }
+
+    .window-dot.green {
+      background: var(--emerald);
+    }
+
+    .demo-title {
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .demo-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-mono);
+      font-size: 0.74rem;
+      color: var(--emerald);
+      background: var(--emerald-light);
+      padding: 3px 9px;
+      border-radius: 999px;
+    }
+
+    .demo-mode-bar {
+      display: flex;
+      gap: 6px;
+      padding: 10px 12px;
+      background: var(--bg-main);
+      border-bottom: 1px solid var(--border-color);
+      flex-wrap: wrap;
+    }
+
+    .mode-tab {
+      flex: 1;
+      min-width: 125px;
+      padding: 8px 10px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-color);
+      background: var(--bg-surface);
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.18s ease;
+      text-align: center;
+    }
+
+    .mode-tab:hover {
+      color: var(--text-primary);
+      border-color: var(--accent-border);
+    }
+
+    .mode-tab.active {
+      background: var(--accent-primary);
+      color: #ffffff;
+      border-color: var(--accent-hover);
+      box-shadow: 0 2px 10px rgba(124, 58, 237, 0.35);
+    }
+
+    .canvas-wrap {
+      position: relative;
+      width: 100%;
+      height: 310px;
+      background: #0f0f12;
+      overflow: hidden;
+    }
+
+    #trackerCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .demo-telemetry {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      padding: 12px 14px;
+      background: var(--bg-surface);
+      border-top: 1px solid var(--border-color);
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+    }
+
+    .telemetry-cell {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      padding: 7px 10px;
+      border-radius: var(--radius-sm);
+    }
+
+    .telemetry-label {
+      color: var(--text-muted);
+      font-size: 0.68rem;
+      display: block;
+    }
+
+    .telemetry-val {
+      color: var(--text-primary);
+      font-weight: 700;
+    }
+
+    .telemetry-val.emerald {
+      color: var(--emerald);
+    }
+
+    /* ================= SECTION GENERAL ================= */
+    section {
+      padding: 84px 0;
+      border-top: 1px solid var(--border-color);
+    }
+
+    .section-header {
+      text-align: center;
+      max-width: 740px;
+      margin: 0 auto 52px;
+    }
+
+    .section-tag {
+      display: inline-block;
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--accent-hover);
+      background: var(--accent-light);
+      border: 1px solid var(--accent-border);
+      padding: 4px 12px;
+      border-radius: 999px;
+      margin-bottom: 14px;
+    }
+
+    .section-header h2 {
+      font-size: clamp(1.75rem, 3vw, 2.45rem);
+      color: var(--text-primary);
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      margin-bottom: 14px;
+    }
+
+    .section-header p {
+      color: var(--text-muted);
+      font-size: 1.05rem;
+    }
+
+    /* ================= VIDEO SLOTS & PLACEHOLDERS ================= */
+    .video-frame {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: #0d0d11;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow-card);
+    }
+
+    .video-frame.hero-video {
+      max-width: 960px;
+      margin: 0 auto;
+      border: 2px solid var(--accent-border);
+      box-shadow: var(--shadow-card), var(--shadow-glow);
+    }
+
+    .video-frame.mode-video {
+      margin-bottom: 22px;
+      border-radius: var(--radius-md);
+    }
+
+    .video-element {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      position: relative;
+      z-index: 1;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+
+    .video-frame.has-video .video-element {
+      z-index: 3;
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .video-frame.has-video .video-placeholder {
+      display: none !important;
+    }
+
+    .video-placeholder {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 24px;
+      background:
+        radial-gradient(circle at 50% 35%, rgba(124, 58, 237, 0.18), transparent 65%),
+        linear-gradient(180deg, rgba(24, 24, 28, 0.96) 0%, rgba(15, 15, 18, 0.99) 100%);
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    .video-placeholder:hover .video-play-badge {
+      transform: scale(1.08);
+      background: var(--accent-hover);
+    }
+
+    .video-play-badge {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: var(--accent-primary);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 14px;
+      box-shadow: 0 6px 24px rgba(124, 58, 237, 0.45);
+      border: 2px solid rgba(255, 255, 255, 0.18);
+      transition: transform 0.2s ease, background 0.2s ease;
+    }
+
+    .video-frame.mode-video .video-play-badge,
+    .video-frame.example-video .video-play-badge {
+      width: 50px;
+      height: 50px;
+      margin-bottom: 10px;
+    }
+
+    .video-placeholder-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #f9fafb;
+      margin-bottom: 6px;
+    }
+
+    .video-frame.mode-video .video-placeholder-title,
+    .video-frame.example-video .video-placeholder-title {
+      font-size: 0.92rem;
+    }
+
+    .video-placeholder-hint {
+      font-family: var(--font-mono);
+      font-size: 0.76rem;
+      color: #a78bfa;
+      background: rgba(124, 58, 237, 0.14);
+      border: 1px solid rgba(139, 92, 246, 0.32);
+      padding: 4px 10px;
+      border-radius: 999px;
+    }
+
+    /* Спливаюче повідомлення (Toast) для демо-кнопок та відео-слотів */
+    .site-toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 999;
+      max-width: 420px;
+      background: var(--bg-card);
+      color: var(--text-primary);
+      border: 1px solid var(--accent-primary);
+      border-radius: var(--radius-md);
+      padding: 16px 20px;
+      box-shadow: var(--shadow-card), var(--shadow-glow);
+      font-size: 0.9rem;
+      line-height: 1.5;
+      opacity: 0;
+      transform: translateY(16px);
+      pointer-events: none;
+      transition: opacity 0.25s ease, transform 0.25s ease;
+    }
+
+    .site-toast.visible {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+
+    /* ================= TWO MODES SECTION ================= */
+    .modes-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 28px;
+    }
+
+    .mode-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 32px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: border-color 0.2s ease, transform 0.2s ease;
+    }
+
+    .mode-card:hover {
+      border-color: var(--accent-border);
+      transform: translateY(-2px);
+    }
+
+    .mode-badge-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .mode-icon-box {
+      width: 44px;
+      height: 44px;
+      border-radius: var(--radius-md);
+      background: var(--accent-light);
+      border: 1px solid var(--accent-border);
+      color: var(--accent-hover);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-family: var(--font-mono);
+    }
+
+    .mode-card h3 {
+      font-size: 1.4rem;
+      color: var(--text-primary);
+      margin-bottom: 10px;
+      font-weight: 700;
+    }
+
+    .mode-card p {
+      color: var(--text-muted);
+      margin-bottom: 18px;
+      font-size: 0.96rem;
+    }
+
+    .mode-features {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding-top: 18px;
+      border-top: 1px solid var(--border-color);
+    }
+
+    .mode-features li {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.92rem;
+      color: var(--text-secondary);
+    }
+
+    .dot-check {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--accent-hover);
+      flex-shrink: 0;
+    }
+
+    /* ================= FEATURES & CONVENIENCE SECTION ================= */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+
+    .feature-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 28px;
+      transition: border-color 0.2s ease, transform 0.2s ease;
+    }
+
+    .feature-card:hover {
+      border-color: var(--accent-border);
+      transform: translateY(-2px);
+    }
+
+    .feature-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 44px;
+      height: 44px;
+      border-radius: var(--radius-md);
+      background: var(--accent-light);
+      border: 1px solid var(--accent-border);
+      color: var(--accent-hover);
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+
+    .feature-card h3 {
+      font-size: 1.15rem;
+      color: var(--text-primary);
+      margin-bottom: 10px;
+      font-weight: 700;
+    }
+
+    .feature-card p {
+      color: var(--text-muted);
+      font-size: 0.93rem;
+    }
+
+    /* ================= EXAMPLES VIDEO GALLERY ================= */
+    .examples-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+
+    .example-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      transition: border-color 0.2s ease;
+    }
+
+    .example-card:hover {
+      border-color: var(--accent-border);
+    }
+
+    .example-card .video-frame {
+      border: none;
+      border-bottom: 1px solid var(--border-color);
+      border-radius: 0;
+      box-shadow: none;
+    }
+
+    .example-body {
+      padding: 20px 22px;
+    }
+
+    .example-body h3 {
+      font-size: 1.08rem;
+      color: var(--text-primary);
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .example-body p {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
+    /* ================= COMPARISON SECTION ================= */
+    .comparison-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 28px;
+    }
+
+    .comp-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 34px;
+      position: relative;
+      transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+
+    .comp-card.new-way {
+      border: 2px solid var(--accent-primary);
+      box-shadow: var(--shadow-glow);
+    }
+
+    .comp-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 22px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .comp-title {
+      font-size: 1.24rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .comp-pill {
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 4px 11px;
+      border-radius: 999px;
+    }
+
+    .comp-pill.slow {
+      background: rgba(239, 68, 68, 0.14);
+      color: var(--danger-muted);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .comp-pill.fast {
+      background: var(--emerald-light);
+      color: var(--emerald);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+    }
+
+    .comp-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .comp-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      font-size: 0.96rem;
+      color: var(--text-secondary);
+    }
+
+    .comp-icon {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 800;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .comp-icon.neg {
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--danger-muted);
+    }
+
+    .comp-icon.pos {
+      background: var(--emerald-light);
+      color: var(--emerald);
+    }
+
+    /* ================= PRICING SECTION ================= */
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 26px;
+      align-items: stretch;
+    }
+
+    .price-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 34px 28px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+
+    .price-card.featured {
+      border: 2px solid var(--accent-primary);
+      box-shadow: var(--shadow-card), var(--shadow-glow);
+      transform: translateY(-8px);
+      background: linear-gradient(180deg, var(--bg-surface) 0%, var(--bg-card) 100%);
+    }
+
+    .popular-ribbon {
+      position: absolute;
+      top: -13px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--accent-primary);
+      color: #ffffff;
+      font-size: 0.74rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 4px 14px;
+      border-radius: 999px;
+      white-space: nowrap;
+      box-shadow: 0 4px 12px rgba(124, 58, 237, 0.4);
+    }
+
+    .plan-name {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 6px;
+    }
+
+    .plan-desc {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+      min-height: 42px;
+    }
+
+    .price-amount {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      margin-bottom: 6px;
+    }
+
+    .price-currency {
+      font-size: 2.5rem;
+      font-weight: 800;
+      color: var(--text-primary);
+      font-family: var(--font-mono);
+      letter-spacing: -0.03em;
+    }
+
+    .price-period {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
+    .price-save {
+      display: inline-block;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--emerald);
+      margin-bottom: 20px;
+      min-height: 20px;
+    }
+
+    .plan-features {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin: 20px 0 28px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border-color);
+    }
+
+    .plan-features li {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.92rem;
+      color: var(--text-secondary);
+    }
+
+    .plan-check {
+      color: var(--emerald);
+      font-weight: 800;
+      flex-shrink: 0;
+    }
+
+    /* ================= FAQ ACCORDION ================= */
+    .faq-list {
+      max-width: 840px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .faq-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      transition: border-color 0.2s ease;
+    }
+
+    .faq-item.open {
+      border-color: var(--accent-border);
+    }
+
+    .faq-question {
+      width: 100%;
+      background: transparent;
+      border: none;
+      padding: 20px 24px;
+      text-align: left;
+      font-size: 1.02rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .faq-question:hover {
+      color: var(--accent-hover);
+    }
+
+    .faq-icon {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      color: var(--accent-hover);
+      transition: transform 0.25s ease;
+      flex-shrink: 0;
+    }
+
+    .faq-item.open .faq-icon {
+      transform: rotate(45deg);
+      background: var(--accent-light);
+    }
+
+    .faq-answer {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.28s ease;
+    }
+
+    .faq-answer-inner {
+      padding: 0 24px 20px;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      border-top: 1px solid var(--border-subtle);
+      padding-top: 14px;
+    }
+
+    /* ================= FOOTER ================= */
+    footer {
+      background: var(--bg-card);
+      border-top: 1px solid var(--border-color);
+      padding: 64px 0 36px;
+    }
+
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr 1fr 1fr;
+      gap: 36px;
+      margin-bottom: 44px;
+    }
+
+    .footer-col h4 {
+      color: var(--text-primary);
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin-bottom: 14px;
+    }
+
+    .footer-col ul {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+
+    .footer-col ul li,
+    .footer-col ul a {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      transition: color 0.2s ease;
+    }
+
+    .footer-col ul a:hover {
+      color: var(--accent-hover);
+    }
+
+    .footer-bottom {
+      padding-top: 26px;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      font-size: 0.84rem;
+      color: var(--text-muted);
+    }
+
+    /* ================= RESPONSIVE ================= */
+    @media (max-width: 992px) {
+      .hero-grid,
+      .comparison-grid,
+      .modes-grid,
+      .features-grid,
+      .examples-grid,
+      .pricing-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .price-card.featured {
+        transform: none;
+      }
+
+      .footer-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .nav-links {
+        display: none;
+      }
+    }
+
+    @media (max-width: 600px) {
+      .hero-metrics,
+      .demo-telemetry,
+      .footer-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .navbar-inner {
+        height: 62px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ================= NAVBAR ================= -->
+  <header class="navbar">
+    <div class="container navbar-inner">
+      <a href="#" class="brand">
+        <span class="brand-icon" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="3"/>
+            <circle cx="12" cy="12" r="3"/>
+            <line x1="12" y1="3" x2="12" y2="6"/>
+            <line x1="12" y1="18" x2="12" y2="21"/>
+            <line x1="3" y1="12" x2="6" y2="12"/>
+            <line x1="18" y1="12" x2="21" y2="12"/>
+          </svg>
+        </span>
+        <span>AutoTracker</span>
+        <span class="version-badge">v1.0</span>
+      </a>
+
+      <ul class="nav-links">
+        <li><a href="#video-showcase" data-i18n="nav_video">Відеоогляд</a></li>
+        <li><a href="#modes" data-i18n="nav_modes">Режими</a></li>
+        <li><a href="#features" data-i18n="nav_features">Можливості</a></li>
+        <li><a href="#examples" data-i18n="nav_examples">Приклади</a></li>
+        <li><a href="#pricing" data-i18n="nav_pricing">Тарифи</a></li>
+        <li><a href="#faq" data-i18n="nav_faq">FAQ</a></li>
+      </ul>
+
+      <div class="nav-actions">
+        <button type="button" class="ctrl-btn" id="langToggle" aria-label="Switch Language">
+          <span id="langLabel">UA</span>
+        </button>
+        <button type="button" class="ctrl-btn" id="themeToggle" aria-label="Toggle Theme">
+          <span id="themeIcon">🌙</span>
+        </button>
+        <a href="#pricing" class="btn btn-primary btn-sm" data-i18n="nav_buy">Купити</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- ================= HERO SECTION ================= -->
+    <section class="hero" style="border-top: none;">
+      <div class="container hero-grid">
+        <div class="hero-content">
+          <div class="eyebrow">
+            <span class="eyebrow-dot"></span>
+            <span data-i18n="hero_badge">Плагін для Adobe Premiere Pro 2020–2026+</span>
+          </div>
+          <h1 data-i18n="hero_title">
+            Автоматичний трекінг об'єктів прямо в <span class="highlight">Adobe Premiere Pro</span>
+          </h1>
+          <p class="hero-subtitle" data-i18n="hero_subtitle">
+            Прив'язуйте текст, плашки, графіку чи стікери до рухомих об'єктів або фіксуйте ціль у центрі кадру в кілька кліків. Зручний вибір точки чи зони та миттєве створення ключів Motion прямо на вашому таймлайні.
+          </p>
+          <div class="hero-cta-group">
+            <a href="#pricing" class="btn btn-primary" data-i18n="hero_cta_buy">Обрати ліцензію</a>
+            <a href="#video-showcase" class="btn btn-outline" data-i18n="hero_cta_demo">Дивитися відео</a>
+          </div>
+          <div class="hero-metrics">
+            <div class="metric-item">
+              <strong data-i18n="metric1_val">2 режими</strong>
+              <span data-i18n="metric1_lbl">Прив'язка шару та Lock-on Center</span>
+            </div>
+            <div class="metric-item">
+              <strong data-i18n="metric2_val">Точка і Зона</strong>
+              <span data-i18n="metric2_lbl">Вибір цілі в 1 клік або рамкою</span>
+            </div>
+            <div class="metric-item">
+              <strong data-i18n="metric3_val">Нативні ключі</strong>
+              <span data-i18n="metric3_lbl">Готові ключі Motion на таймлайні</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Interactive AutoTracker Panel + Live HTML5 Canvas -->
+        <div class="demo-shell" aria-label="Interactive AutoTracker Preview">
+          <div class="demo-topbar">
+            <div class="window-dots">
+              <span class="window-dot purple"></span>
+              <span class="window-dot green"></span>
+              <span class="window-dot"></span>
+            </div>
+            <span class="demo-title">AutoTracker v1.0 — Premiere Pro Panel</span>
+            <span class="demo-status" id="demoStatusBadge">● TRACKING ACTIVE</span>
+          </div>
+
+          <div class="demo-mode-bar" role="tablist">
+            <button type="button" class="mode-tab active" data-mode="attach" data-i18n="demo_mode_attach">
+              Прив'язка шару
+            </button>
+            <button type="button" class="mode-tab" data-mode="lockon" data-i18n="demo_mode_lockon">
+              Центрувати на точці
+            </button>
+            <button type="button" class="mode-tab" data-mode="area" data-i18n="demo_mode_area">
+              Трекінг зони (ROI)
+            </button>
+          </div>
+
+          <div class="canvas-wrap">
+            <canvas id="trackerCanvas" width="600" height="310"></canvas>
+          </div>
+
+          <div class="demo-telemetry">
+            <div class="telemetry-cell">
+              <span class="telemetry-label" data-i18n="tel_pos">ПОЗИЦІЯ X/Y</span>
+              <span class="telemetry-val" id="telPos">960, 540</span>
+            </div>
+            <div class="telemetry-cell">
+              <span class="telemetry-label" data-i18n="tel_target">ВИБІР ЦІЛІ</span>
+              <span class="telemetry-val" id="telTarget">◉ Точка</span>
+            </div>
+            <div class="telemetry-cell">
+              <span class="telemetry-label" data-i18n="tel_smooth">ЗГЛАДЖУВАННЯ</span>
+              <span class="telemetry-val emerald" id="telSmooth">Увімкнено ✓</span>
+            </div>
+            <div class="telemetry-cell">
+              <span class="telemetry-label" data-i18n="tel_hw">ПРИСКОРЕННЯ</span>
+              <span class="telemetry-val emerald" id="telHw">GPU + AI ●</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= MAIN VIDEO SHOWCASE SECTION ================= -->
+    <section id="video-showcase">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-tag" data-i18n="vid_tag">Відеоогляд</span>
+          <h2 data-i18n="vid_title">Подивіться AutoTracker у дії</h2>
+          <p data-i18n="vid_subtitle">
+            Увесь процес — від завантаження кліпу та вибору точки до готових ключових кадрів на таймлайні — займає лічені секунди.
+          </p>
+        </div>
+
+        <!-- ВСТАВТЕ ГОЛОВНЕ ВІДЕО СЮДИ: покладіть файл landing/videos/main_overview.mp4 -->
+        <div class="video-frame hero-video">
+          <video class="video-element" src="videos/main_overview.mp4" controls preload="metadata" playsinline></video>
+          <div class="video-placeholder">
+            <div class="video-play-badge">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                <polygon points="8 5 19 12 8 19 8 5"></polygon>
+              </svg>
+            </div>
+            <div class="video-placeholder-title" data-i18n="vid_main_placeholder">Головне демо-відео роботи плагіна (16:9)</div>
+            <div class="video-placeholder-hint">landing/videos/main_overview.mp4</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= TWO WORKFLOW MODES (WITH VIDEO SLOTS) ================= -->
+    <section id="modes">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-tag" data-i18n="modes_tag">Два режими роботи</span>
+          <h2 data-i18n="modes_title">Один плагін для найчастіших задач монтажу</h2>
+          <p data-i18n="modes_subtitle">
+            Перемикайтеся між прив'язкою графічних шарів та фіксацією камери на об'єкті однією кнопкою у верхній частині панелі.
+          </p>
+        </div>
+
+        <div class="modes-grid">
+          <!-- Mode 1: Attach Layer -->
+          <div class="mode-card">
+            <div>
+              <div class="mode-badge-row">
+                <div class="mode-icon-box">01</div>
+                <span class="version-badge">Attach Layer</span>
+              </div>
+              <h3 data-i18n="mode1_title">Прив'язка шару</h3>
+              <p data-i18n="mode1_desc">
+                Прикріплюйте текст, плашки з іменами, стрілки, цінники, стікери або ефекти розмиття до будь-якого рухомого об'єкта у відео.
+              </p>
+
+              <!-- ВІДЕО РЕЖИМУ 1: покладіть файл landing/videos/mode_attach.mp4 -->
+              <div class="video-frame mode-video">
+                <video class="video-element" src="videos/mode_attach.mp4" controls loop muted preload="metadata" playsinline></video>
+                <div class="video-placeholder">
+                  <div class="video-play-badge">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                      <polygon points="8 5 19 12 8 19 8 5"></polygon>
+                    </svg>
+                  </div>
+                  <div class="video-placeholder-title" data-i18n="vid_mode1_placeholder">Відео: Прив'язка тексту та графіки</div>
+                  <div class="video-placeholder-hint">landing/videos/mode_attach.mp4</div>
+                </div>
+              </div>
+            </div>
+
+            <ul class="mode-features">
+              <li>
+                <span class="dot-check"></span>
+                <span data-i18n="mode1_f1">Зберігає початковий відступ (Offset) шару там, де ви його поставили</span>
+              </li>
+              <li>
+                <span class="dot-check"></span>
+                <span data-i18n="mode1_f2">Працює з титрами, графікою, PNG, відеошарами та вкладеними секвенціями</span>
+              </li>
+              <li>
+                <span class="dot-check"></span>
+                <span data-i18n="mode1_f3">Вибір об'єкта одним кліком (Точка) або виділенням рамки (Зона)</span>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Mode 2: Lock-on Center -->
+          <div class="mode-card">
+            <div>
+              <div class="mode-badge-row">
+                <div class="mode-icon-box">02</div>
+                <span class="version-badge">Lock-on Center</span>
+              </div>
+              <h3 data-i18n="mode2_title">Центрувати на точці</h3>
+              <p data-i18n="mode2_desc">
+                Динамічний ефект стабілізації, де обраний об'єкт або обличчя постійно утримується по центру екрана, а кадр плавно рухається навколо нього.
+              </p>
+
+              <!-- ВІДЕО РЕЖИМУ 2: покладіть файл landing/videos/mode_lockon.mp4 -->
+              <div class="video-frame mode-video">
+                <video class="video-element" src="videos/mode_lockon.mp4" controls loop muted preload="metadata" playsinline></video>
+                <div class="video-placeholder">
+                  <div class="video-play-badge">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                      <polygon points="8 5 19 12 8 19 8 5"></polygon>
+                    </svg>
+                  </div>
+                  <div class="video-placeholder-title" data-i18n="vid_mode2_placeholder">Відео: Центрування на точці (Lock-on)</div>
+                  <div class="video-placeholder-hint">landing/videos/mode_lockon.mp4</div>
+                </div>
+              </div>
+            </div>
+
+            <ul class="mode-features">
+              <li>
+                <span class="dot-check"></span>
+                <span data-i18n="mode2_f1">Окремий цільовий шар не потрібен — ключі ставляться прямо на кліп</span>
+              </li>
+              <li>
+                <span class="dot-check"></span>
+                <span data-i18n="mode2_f2">Автоматичне масштабування кадру, щоб уникати появи чорних полів по краях</span>
+              </li>
+              <li>
+                <span class="dot-check"></span>
+                <span data-i18n="mode2_f3">Чудово підходить для динамічних переходів у Reels, TikTok, Shorts та кліпах</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= FEATURES & CONVENIENCE SECTION ================= -->
+    <section id="features">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-tag" data-i18n="feat_tag">Зручність та Функції</span>
+          <h2 data-i18n="feat_title">Продуманий до дрібниць робочий процес</h2>
+          <p data-i18n="feat_subtitle">
+            Усі необхідні інструменти зібрані в одній компактній панелі, щоб ви витрачали мінімум часу на технічну рутину.
+          </p>
+        </div>
+
+        <div class="features-grid">
+          <!-- Feature 1 -->
+          <div class="feature-card">
+            <div class="feature-icon">◉</div>
+            <h3 data-i18n="f1_title">Режими «Точка» та «Зона»</h3>
+            <p data-i18n="f1_desc">
+              Клікніть у потрібну деталь для швидкого точкового трекінгу або намалюйте рамку навколо об'єкта. Розміри рамок легко регулюються повзунками чи мишкою прямо на прев'ю.
+            </p>
+          </div>
+
+          <!-- Feature 2 -->
+          <div class="feature-card">
+            <div class="feature-icon">🔍</div>
+            <h3 data-i18n="f2_title">Зручне прев'ю із зумом і панорамуванням</h3>
+            <p data-i18n="f2_desc">
+              Наближайте кадр коліщатком миші або кнопками (+, −, 1:1, Fit), щоб легко вибрати навіть дрібну деталь, і переміщуйтесь по кадру за допомогою Space + перетягування.
+            </p>
+          </div>
+
+          <!-- Feature 3 -->
+          <div class="feature-card">
+            <div class="feature-icon">✋</div>
+            <h3 data-i18n="f3_title">Силуетний режим для складних цілей</h3>
+            <p data-i18n="f3_desc">
+              Спеціальний режим «Силует» дозволяє впевнено трекувати однотонні об'єкти: пальці, жести рук, мультяшних персонажів та плоскі графічні елементи.
+            </p>
+          </div>
+
+          <!-- Feature 4 -->
+          <div class="feature-card">
+            <div class="feature-icon">⏱️</div>
+            <h3 data-i18n="f4_title">Трекінг від курсора (CTI)</h3>
+            <p data-i18n="f4_desc">
+              Починайте трекінг саме з тієї секунди, де стоїть курсор на таймлайні. Натисніть «⟳ Оновити кадр», вкажіть об'єкт і записуйте ключі тільки на потрібному відрізку.
+            </p>
+          </div>
+
+          <!-- Feature 5 -->
+          <div class="feature-card">
+            <div class="feature-icon">〰️</div>
+            <h3 data-i18n="f5_title">Згладжування та вибір кроку ключів</h3>
+            <p data-i18n="f5_desc">
+              Опція згладжування робить рух плавним і прибирає тремтіння камери. Обирайте частоту запису ключів: кожен кадр, кожні 2 або кожні 5 кадрів.
+            </p>
+          </div>
+
+          <!-- Feature 6 -->
+          <div class="feature-card">
+            <div class="feature-icon">🎨</div>
+            <h3 data-i18n="f6_title">Темна / Світла теми та мови UA / EN</h3>
+            <p data-i18n="f6_desc">
+              Сучасний чистий інтерфейс із миттєвим перемиканням між темною та світлою темами, а також повною підтримкою української та англійської мов.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= EXAMPLES GALLERY (3 VIDEO SLOTS) ================= -->
+    <section id="examples">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-tag" data-i18n="ex_tag">Приклади використання</span>
+          <h2 data-i18n="ex_title">Як AutoTracker допомагає у реальних проєктах</h2>
+          <p data-i18n="ex_subtitle">
+            Від розмовних відео та оглядів до динамічних кліпів і коротких вертикальних роликів.
+          </p>
+        </div>
+
+        <div class="examples-grid">
+          <!-- Example 1 -->
+          <div class="example-card">
+            <!-- ВІДЕО ПРИКЛАДУ 1: покладіть файл landing/videos/example_1.mp4 -->
+            <div class="video-frame example-video">
+              <video class="video-element" src="videos/example_1.mp4" controls loop muted preload="metadata" playsinline></video>
+              <div class="video-placeholder">
+                <div class="video-play-badge">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                    <polygon points="8 5 19 12 8 19 8 5"></polygon>
+                  </svg>
+                </div>
+                <div class="video-placeholder-title" data-i18n="ex1_vid_placeholder">Відео-приклад #1</div>
+                <div class="video-placeholder-hint">landing/videos/example_1.mp4</div>
+              </div>
+            </div>
+            <div class="example-body">
+              <h3 data-i18n="ex1_title">Текстові плашки та виноски</h3>
+              <p data-i18n="ex1_desc">
+                Прикріплюйте підписи, ціни, характеристики чи інфографіку, які плавно слідують за людиною або предметом у кадрі.
+              </p>
+            </div>
+          </div>
+
+          <!-- Example 2 -->
+          <div class="example-card">
+            <!-- ВІДЕО ПРИКЛАДУ 2: покладіть файл landing/videos/example_2.mp4 -->
+            <div class="video-frame example-video">
+              <video class="video-element" src="videos/example_2.mp4" controls loop muted preload="metadata" playsinline></video>
+              <div class="video-placeholder">
+                <div class="video-play-badge">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                    <polygon points="8 5 19 12 8 19 8 5"></polygon>
+                  </svg>
+                </div>
+                <div class="video-placeholder-title" data-i18n="ex2_vid_placeholder">Відео-приклад #2</div>
+                <div class="video-placeholder-hint">landing/videos/example_2.mp4</div>
+              </div>
+            </div>
+            <div class="example-body">
+              <h3 data-i18n="ex2_title">Динамічний Lock-on ефект</h3>
+              <p data-i18n="ex2_desc">
+                Утримуйте увагу глядача на головному об'єкті в динамічних сценах спорту, танців, автооглядів чи тревел-блогів.
+              </p>
+            </div>
+          </div>
+
+          <!-- Example 3 -->
+          <div class="example-card">
+            <!-- ВІДЕО ПРИКЛАДУ 3: покладіть файл landing/videos/example_3.mp4 -->
+            <div class="video-frame example-video">
+              <video class="video-element" src="videos/example_3.mp4" controls loop muted preload="metadata" playsinline></video>
+              <div class="video-placeholder">
+                <div class="video-play-badge">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                    <polygon points="8 5 19 12 8 19 8 5"></polygon>
+                  </svg>
+                </div>
+                <div class="video-placeholder-title" data-i18n="ex3_vid_placeholder">Відео-приклад #3</div>
+                <div class="video-placeholder-hint">landing/videos/example_3.mp4</div>
+              </div>
+            </div>
+            <div class="example-body">
+              <h3 data-i18n="ex3_title">Трекінг жестів та дрібних деталей</h3>
+              <p data-i18n="ex3_desc">
+                Прив'язуйте іконки, стікери або ефекти безпосередньо до руху руки чи кінчика пальця за допомогою силуетного режиму.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= COMPARISON SECTION (MANUAL VS AUTOTRACKER) ================= -->
+    <section id="comparison">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-tag" data-i18n="comp_tag">Економія часу</span>
+          <h2 data-i18n="comp_title">Більше ніякої ручної рутини з ключами</h2>
+          <p data-i18n="comp_subtitle">
+            Замість того щоб вручну пересувати об'єкт кадр за кадром, довірте відстеження автоматиці та зосередьтесь на творчому монтажі.
+          </p>
+        </div>
+
+        <div class="comparison-grid">
+          <!-- Manual Keyframing -->
+          <div class="comp-card">
+            <div class="comp-header">
+              <h3 class="comp-title" data-i18n="comp_old_title">Ручне розставляння ключів</h3>
+              <span class="comp-pill slow" data-i18n="comp_old_time">15–20 хвилин</span>
+            </div>
+            <ul class="comp-list">
+              <li>
+                <span class="comp-icon neg">✕</span>
+                <span data-i18n="comp_old_1">Втомливе переміщення шару мишкою на кожному окремому кадрі таймлайну.</span>
+              </li>
+              <li>
+                <span class="comp-icon neg">✕</span>
+                <span data-i18n="comp_old_2">Помітні ривки та нерівномірне плавання тексту через людський фактор.</span>
+              </li>
+              <li>
+                <span class="comp-icon neg">✕</span>
+                <span data-i18n="comp_old_3">Якщо потрібно змінити позицію плашки — доводиться переробляти всі ключі заново.</span>
+              </li>
+              <li>
+                <span class="comp-icon neg">✕</span>
+                <span data-i18n="comp_old_4">Величезні витрати часу на простих щоденних задачах монтажу.</span>
+              </li>
+            </ul>
+          </div>
+
+          <!-- AutoTracker Way -->
+          <div class="comp-card new-way">
+            <div class="comp-header">
+              <h3 class="comp-title" data-i18n="comp_new_title">Автоматично з AutoTracker</h3>
+              <span class="comp-pill fast" data-i18n="comp_new_time">Кілька секунд</span>
+            </div>
+            <ul class="comp-list">
+              <li>
+                <span class="comp-icon pos">✓</span>
+                <span data-i18n="comp_new_1">Простий процес у 3 кліки: завантажили кліп, вказали ціль, натиснули «Старт трекінгу».</span>
+              </li>
+              <li>
+                <span class="comp-icon pos">✓</span>
+                <span data-i18n="comp_new_2">Плавний і природний рух завдяки вбудованому автоматичному згладжуванню траєкторії.</span>
+              </li>
+              <li>
+                <span class="comp-icon pos">✓</span>
+                <span data-i18n="comp_new_3">Створює стандартні ключові кадри Motion прямо на кліпі у вашому таймлайні.</span>
+              </li>
+              <li>
+                <span class="comp-icon pos">✓</span>
+                <span data-i18n="comp_new_4">Повний контроль: змінюйте текст, шрифт або колір прив'язаного шару в будь-який момент.</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= PRICING SECTION ================= -->
+    <section id="pricing">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-tag" data-i18n="price_tag">Тарифи</span>
+          <h2 data-i18n="price_title">Прозорі умови для кожного монтажера</h2>
+          <p data-i18n="price_subtitle">
+            Оберіть зручну підписку або придбайте постійну ліцензію один раз і назавжди. Працює повністю локально на вашому ПК.
+          </p>
+        </div>
+
+        <div class="pricing-grid">
+          <!-- Card 1: Monthly -->
+          <div class="price-card">
+            <div>
+              <div class="plan-name" data-i18n="plan1_name">Місячна підписка</div>
+              <p class="plan-desc" data-i18n="plan1_desc">Для разових проєктів та швидкого старту без зобов'язань.</p>
+              <div class="price-amount">
+                <span class="price-currency">$12</span>
+                <span class="price-period" data-i18n="plan1_period">/ місяць</span>
+              </div>
+              <span class="price-save" data-i18n="plan1_save">Скасування у будь-який момент</span>
+
+              <ul class="plan-features">
+                <li><span class="plan-check">✓</span> <span data-i18n="pf_all_modes">Обидва режими: Прив'язка шару та Lock-on Center</span></li>
+                <li><span class="plan-check">✓</span> <span data-i18n="pf_ai">Вибір Точки (◉), Зони (☐) та Силуетний режим</span></li>
+                <li><span class="plan-check">✓</span> <span data-i18n="pf_1pc">Активація на 1 робочому ПК</span></li>
+                <li><span class="plan-check">✓</span> <span data-i18n="pf_updates_sub">Усі оновлення протягом дії підписки</span></li>
+              </ul>
+            </div>
+            <a href="#" class="btn btn-outline buy-link" data-plan="monthly" data-i18n="plan1_btn">Обрати Місячний</a>
+          </div>
+
+          <!-- Card 2: Lifetime Pro (Featured) -->
+          <div class="price-card featured">
+            <span class="popular-ribbon" data-i18n="plan2_ribbon">Хіт продажу • Best Value</span>
+            <div>
+              <div class="plan-name" data-i18n="plan2_name">Постійна ліцензія (Lifetime Pro)</div>
+              <p class="plan-desc" data-i18n="plan2_desc">Платіть один раз — користуйтеся назавжди без жодних щомісячних платежів.</p>
+              <div class="price-amount">
+                <span class="price-currency">$149</span>
+                <span class="price-period" data-i18n="plan2_period">одноразово</span>
+              </div>
+              <span class="price-save" data-i18n="plan2_save">Назавжди • Окупається за перші проєкти</span>
+
+              <ul class="plan-features">
+                <li><span class="plan-check">✓</span> <span data-i18n="pf_all_modes">Обидва режими: Прив'язка шару та Lock-on Center</span></li>
+                <li><span class="plan-check">✓</span> <span data-i18n="pf_ai">Вибір Точки (◉), Зони (☐) та Силуетний режим</span></li>
+                <li><span class="plan-check">✓</span> <span data-i18n="pf_3pc">До 3 ПК одночасно (робочий ПК + ноутбук)</span></li>
+                <li><span class="plan-check">✓</span> <span data-i18n="pf_updates_life">Усі оновлення v1.x та пріоритетна підтримка</span></li>
+              </ul>
+            </div>
+            <a href="#" class="btn btn-primary buy-link" data-plan="lifetime" data-i18n="plan2_btn">Купити Lifetime Pro</a>
+          </div>
+
+          <!-- Card 3: Annual -->
+          <div class="price-card">
+            <div>
+              <div class="plan-name" data-i18n="plan3_name">Річна підписка</div>
+              <p class="plan-desc" data-i18n="plan3_desc">Оптимальний вибір для регулярного відеомонтажу.</p>
+              <div class="price-amount">
+                <span class="price-currency">$79</span>
+                <span class="price-period" data-i18n="plan3_period">/ рік</span>
+              </div>
+              <span class="price-save" data-i18n="plan3_save">Економія 45% ($6.58 / міс)</span>
+
+              <ul class="plan-features">
+                <li><span class="plan-check">✓</span> <span data-i18n="pf_all_modes">Обидва режими: Прив'язка шару та Lock-on Center</span></li>
+                <li><span class="plan-check">✓</span> <span data-i18n="pf_ai">Вибір Точки (◉), Зони (☐) та Силуетний режим</span></li>
+                <li><span class="plan-check">✓</span> <span data-i18n="pf_2pc">До 2 ПК одночасно</span></li>
+                <li><span class="plan-check">✓</span> <span data-i18n="pf_updates_sub">Усі оновлення протягом дії підписки</span></li>
+              </ul>
+            </div>
+            <a href="#" class="btn btn-outline buy-link" data-plan="annual" data-i18n="plan3_btn">Обрати Річний</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= FAQ SECTION ================= -->
+    <section id="faq">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-tag" data-i18n="faq_tag">Питання та відповіді</span>
+          <h2 data-i18n="faq_title">Часті запитання (FAQ)</h2>
+          <p data-i18n="faq_subtitle">
+            Відповіді на основні питання щодо встановлення та щоденної роботи з AutoTracker.
+          </p>
+        </div>
+
+        <div class="faq-list" id="faqAccordion">
+          <!-- FAQ 1 -->
+          <div class="faq-item open">
+            <button type="button" class="faq-question" aria-expanded="true">
+              <span data-i18n="faq1_q">Які версії Adobe Premiere Pro підтримуються?</span>
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-answer" style="max-height: 220px;">
+              <div class="faq-answer-inner" data-i18n="faq1_a">
+                AutoTracker працює в Adobe Premiere Pro версій 2020 (v14.0) і новіших, включно з актуальними релізами 2024, 2025 та 2026+ на Windows 10 та Windows 11 (64-bit).
+              </div>
+            </div>
+          </div>
+
+          <!-- FAQ 2 -->
+          <div class="faq-item">
+            <button type="button" class="faq-question" aria-expanded="false">
+              <span data-i18n="faq2_q">Чи відкриється проєкт у іншого монтажера, якщо в нього немає цього плагіна?</span>
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-answer">
+              <div class="faq-answer-inner" data-i18n="faq2_a">
+                Так, без жодних проблем! Плагін створює стандартні нативні ключові кадри ефекту Motion (Position) прямо на кліпі у Premiere Pro. Ви можете передати проєкт клієнту чи колезі — уся анімація збережеться.
+              </div>
+            </div>
+          </div>
+
+          <!-- FAQ 3 -->
+          <div class="faq-item">
+            <button type="button" class="faq-question" aria-expanded="false">
+              <span data-i18n="faq3_q">Чи потрібен постійний інтернет для роботи плагіна?</span>
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-answer">
+              <div class="faq-answer-inner" data-i18n="faq3_a">
+                Ні. Увесь аналіз кадрів і трекінг виконуються повністю локально на вашому комп'ютері. Ваші відеофайли нікуди не відправляються.
+              </div>
+            </div>
+          </div>
+
+          <!-- FAQ 4 -->
+          <div class="faq-item">
+            <button type="button" class="faq-question" aria-expanded="false">
+              <span data-i18n="faq4_q">Чи можна почати трекінг не з початку кліпу, а з конкретної секунди?</span>
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-answer">
+              <div class="faq-answer-inner" data-i18n="faq4_a">
+                Так! Поставте курсор таймлайну (Playhead) на потрібний момент, натисніть кнопку «⟳ Оновити кадр» у вікні плагіна та залиште увімкненою галочку «Трекувати від курсора (CTI)».
+              </div>
+            </div>
+          </div>
+
+          <!-- FAQ 5 -->
+          <div class="faq-item">
+            <button type="button" class="faq-question" aria-expanded="false">
+              <span data-i18n="faq5_q">Наскільки легко встановлюється плагін?</span>
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-answer">
+              <div class="faq-answer-inner" data-i18n="faq5_a">
+                У комплекті йде автоматичний інсталятор install.bat — просто запустіть його подвійним кліком. Після відкриття Premiere Pro панель з'явиться у меню Window → Extensions → Auto-Tracker.
+              </div>
+            </div>
+          </div>
+
+          <!-- FAQ 6 -->
+          <div class="faq-item">
+            <button type="button" class="faq-question" aria-expanded="false">
+              <span data-i18n="faq6_q">Як перенести ліцензію на інший комп'ютер або ноутбук?</span>
+              <span class="faq-icon">+</span>
+            </button>
+            <div class="faq-answer">
+              <div class="faq-answer-inner" data-i18n="faq6_a">
+                Натисніть на іконку ключа 🔑 у шапці плагіна та оберіть «Деактивувати (перенести)». Після цього ви одразу зможете активувати цей самий ключ на іншому пристрої.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ================= FOOTER ================= -->
+  <footer>
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-col">
+          <div class="brand" style="margin-bottom: 12px;">
+            <span class="brand-icon" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <rect x="3" y="3" width="18" height="18" rx="3"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            </span>
+            <span>AutoTracker</span>
+            <span class="version-badge">v1.0</span>
+          </div>
+          <p style="font-size: 0.88rem; color: var(--text-muted);" data-i18n="footer_about">
+            Зручний плагін автоматичного трекінгу об'єктів та стабілізації для Adobe Premiere Pro. Створено для швидкого та комфортного монтажу.
+          </p>
+        </div>
+
+        <div class="footer-col">
+          <h4 data-i18n="footer_sysreq_title">Системні вимоги</h4>
+          <ul>
+            <li data-i18n="footer_sys_1">Premiere Pro 2020 (v14.0) – 2026+</li>
+            <li data-i18n="footer_sys_2">Windows 10 / 11 (64-bit)</li>
+            <li data-i18n="footer_sys_3">8 GB RAM (рекомендовано 16 GB)</li>
+            <li data-i18n="footer_sys_4">Усі компоненти вже вбудовано</li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4 data-i18n="footer_docs_title">Навігація</h4>
+          <ul>
+            <li><a href="#video-showcase" data-i18n="footer_doc_1">Відеоогляд</a></li>
+            <li><a href="#modes" data-i18n="footer_doc_2">Режими роботи</a></li>
+            <li><a href="#features" data-i18n="footer_doc_3">Можливості та зручність</a></li>
+            <li><a href="#faq" data-i18n="footer_doc_4">Часті запитання (FAQ)</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4 data-i18n="footer_support_title">Підтримка та покупка</h4>
+          <ul>
+            <li><a href="mailto:support@autotracker-plugin.com">support@autotracker-plugin.com</a></li>
+            <li data-i18n="footer_sup_hours">Пн–Пт: 09:00 – 19:00</li>
+            <li><a href="#pricing" class="buy-link" data-plan="lifetime" data-i18n="footer_sup_buy">Придбати ліцензію</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <span data-i18n="footer_copy">© 2026 AutoTracker Plugin. Усі права захищено. Adobe та Premiere Pro є зареєстрованими марками Adobe Inc.</span>
+        <span data-i18n="footer_tagline">Створено для відеомонтажерів та контент-мейкерів</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Спливаюче інформаційне повідомлення -->
+  <div id="siteToast" class="site-toast" role="status" aria-live="polite"></div>
+
+  <!-- ================= SCRIPTS ================= -->
+  <script>
+    // Єдина точка налаштування посилання на оплату (Lemon Squeezy / Gumroad)
+    const CHECKOUT_URL = "https://checkout.autotracker-plugin.com/buy";
+
+    // Усі DOM-елементи та змінні стану оголошуються на самому початку, щоб уникнути помилок ініціалізації (TDZ)
+    const rootHtml = document.documentElement;
+    const themeToggleBtn = document.getElementById("themeToggle");
+    const themeIcon = document.getElementById("themeIcon");
+    const langToggleBtn = document.getElementById("langToggle");
+    const langLabel = document.getElementById("langLabel");
+    const canvas = document.getElementById("trackerCanvas");
+    const ctx = canvas ? canvas.getContext("2d") : null;
+    const telPos = document.getElementById("telPos");
+    const telTarget = document.getElementById("telTarget");
+    const telSmooth = document.getElementById("telSmooth");
+    const siteToast = document.getElementById("siteToast");
+
+    let currentLang = "uk";
+    let activeDemoMode = "attach"; // 'attach' | 'lockon' | 'area'
+    let t = 0;
+    const trail = [];
+    let toastTimer = null;
+
+    function showToast(htmlMessage) {
+      if (!siteToast) return;
+      siteToast.innerHTML = htmlMessage;
+      siteToast.classList.add("visible");
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        siteToast.classList.remove("visible");
+      }, 5000);
+    }
+
+    function updateTelemetryLabels() {
+      if (!telTarget || !telSmooth) return;
+      if (activeDemoMode === "area") {
+        telTarget.textContent = currentLang === "en" ? "☐ Area (ROI)" : "☐ Зона (ROI)";
+      } else {
+        telTarget.textContent = currentLang === "en" ? "◉ Point" : "◉ Точка";
+      }
+      telSmooth.textContent = currentLang === "en" ? "Enabled ✓" : "Увімкнено ✓";
+    }
+
+    // Прив'язка посилань купівлі до CHECKOUT_URL з параметром тарифного плану
+    document.querySelectorAll(".buy-link").forEach((link) => {
+      const plan = link.getAttribute("data-plan") || "lifetime";
+      link.setAttribute("href", `${CHECKOUT_URL}?plan=${encodeURIComponent(plan)}`);
+
+      link.addEventListener("click", (e) => {
+        // Якщо посилання ще тестове (не замінене на реальний Lemon Squeezy / Gumroad), показуємо підказку замість помилки браузера
+        if (CHECKOUT_URL.includes("checkout.autotracker-plugin.com")) {
+          e.preventDefault();
+          const planNamesUk = {
+            monthly: "Місячна підписка ($12)",
+            lifetime: "Постійна ліцензія Lifetime Pro ($149)",
+            annual: "Річна підписка ($79)"
+          };
+          const planNamesEn = {
+            monthly: "Monthly Subscription ($12)",
+            lifetime: "Lifetime Pro License ($149)",
+            annual: "Annual Subscription ($79)"
+          };
+          if (currentLang === "en") {
+            showToast(`<strong>Selected: ${planNamesEn[plan] || plan}</strong><br><span style="color:var(--text-muted);font-size:0.82rem;">Paste your Lemon Squeezy or Gumroad link into <code>CHECKOUT_URL</code> inside <code>landing/index.html</code>.</span>`);
+          } else {
+            showToast(`<strong>Обрано: ${planNamesUk[plan] || plan}</strong><br><span style="color:var(--text-muted);font-size:0.82rem;">Вставте ваше посилання на оплату (Lemon Squeezy / Gumroad) у змінну <code>CHECKOUT_URL</code> у файлі <code>landing/index.html</code>.</span>`);
+          }
+        }
+      });
+    });
+
+    // Автоматичне керування відео-слотами + можливість вибрати відео кліком для перевірки
+    document.querySelectorAll(".video-element").forEach((video) => {
+      const frame = video.closest(".video-frame");
+      const placeholder = frame ? frame.querySelector(".video-placeholder") : null;
+      if (!frame || !placeholder) return;
+
+      function markVideoLoaded() {
+        if (video.readyState >= 1 && video.videoWidth > 0) {
+          frame.classList.add("has-video");
+        }
+      }
+      function markVideoMissing() {
+        frame.classList.remove("has-video");
+      }
+
+      video.addEventListener("loadedmetadata", markVideoLoaded);
+      video.addEventListener("loadeddata", markVideoLoaded);
+      video.addEventListener("canplay", markVideoLoaded);
+      video.addEventListener("error", markVideoMissing);
+
+      // Клік на плейсхолдер дозволяє одразу вибрати будь-який .mp4 файл з ПК для перегляду в цьому слоті
+      placeholder.addEventListener("click", () => {
+        const hintEl = placeholder.querySelector(".video-placeholder-hint");
+        const expectedPath = hintEl ? hintEl.textContent : "landing/videos/*.mp4";
+
+        const fileInput = document.createElement("input");
+        fileInput.type = "file";
+        fileInput.accept = "video/mp4,video/webm,video/*";
+        fileInput.style.display = "none";
+
+        fileInput.addEventListener("change", () => {
+          const file = fileInput.files && fileInput.files[0];
+          if (file) {
+            const blobUrl = URL.createObjectURL(file);
+            video.src = blobUrl;
+            frame.classList.add("has-video");
+            video.play().catch(() => {});
+          }
+        });
+
+        if (currentLang === "en") {
+          showToast(`<strong>Video Slot: <code>${expectedPath}</code></strong><br><span style="color:var(--text-muted);font-size:0.82rem;">Place the file in that folder or pick an <code>.mp4</code> file now to preview it live.</span>`);
+        } else {
+          showToast(`<strong>Місце під відео: <code>${expectedPath}</code></strong><br><span style="color:var(--text-muted);font-size:0.82rem;">Покладіть файл у цю папку або оберіть <code>.mp4</code> зараз для живого прев'ю на сторінці.</span>`);
+        }
+
+        document.body.appendChild(fileInput);
+        fileInput.click();
+        setTimeout(() => fileInput.remove(), 1000);
+      });
+    });
+
+    // Перемикач теми (Dark / Light)
+    function applyTheme(theme) {
+      rootHtml.setAttribute("data-theme", theme);
+      if (themeIcon) {
+        themeIcon.textContent = theme === "dark" ? "🌙" : "☀️";
+      }
+      try {
+        localStorage.setItem("autotracker_theme", theme);
+      } catch (e) {}
+    }
+
+    const savedTheme = (() => {
+      try {
+        return localStorage.getItem("autotracker_theme");
+      } catch (e) {
+        return null;
+      }
+    })();
+    if (savedTheme === "light" || savedTheme === "dark") {
+      applyTheme(savedTheme);
+    }
+
+    if (themeToggleBtn) {
+      themeToggleBtn.addEventListener("click", () => {
+        const current = rootHtml.getAttribute("data-theme") === "light" ? "light" : "dark";
+        applyTheme(current === "dark" ? "light" : "dark");
+      });
+    }
+
+    // Словник локалізації UA / EN
+    const translations = {
+      uk: {
+        nav_video: "Відеоогляд",
+        nav_modes: "Режими",
+        nav_features: "Можливості",
+        nav_examples: "Приклади",
+        nav_pricing: "Тарифи",
+        nav_faq: "FAQ",
+        nav_buy: "Купити",
+        hero_badge: "Плагін для Adobe Premiere Pro 2020–2026+",
+        hero_title: "Автоматичний трекінг об'єктів прямо в <span class=\"highlight\">Adobe Premiere Pro</span>",
+        hero_subtitle: "Прив'язуйте текст, плашки, графіку чи стікери до рухомих об'єктів або фіксуйте ціль у центрі кадру в кілька кліків. Зручний вибір точки чи зони та миттєве створення ключів Motion прямо на вашому таймлайні.",
+        hero_cta_buy: "Обрати ліцензію",
+        hero_cta_demo: "Дивитися відео",
+        metric1_val: "2 режими",
+        metric1_lbl: "Прив'язка шару та Lock-on Center",
+        metric2_val: "Точка і Зона",
+        metric2_lbl: "Вибір цілі в 1 клік або рамкою",
+        metric3_val: "Нативні ключі",
+        metric3_lbl: "Готові ключі Motion на таймлайні",
+        demo_mode_attach: "Прив'язка шару",
+        demo_mode_lockon: "Центрувати на точці",
+        demo_mode_area: "Трекінг зони (ROI)",
+        tel_pos: "ПОЗИЦІЯ X/Y",
+        tel_target: "ВИБІР ЦІЛІ",
+        tel_smooth: "ЗГЛАДЖУВАННЯ",
+        tel_hw: "ПРИСКОРЕННЯ",
+        vid_tag: "Відеоогляд",
+        vid_title: "Подивіться AutoTracker у дії",
+        vid_subtitle: "Увесь процес — від завантаження кліпу та вибору точки до готових ключових кадрів на таймлайні — займає лічені секунди.",
+        vid_main_placeholder: "Головне демо-відео роботи плагіна (16:9)",
+        modes_tag: "Два режими роботи",
+        modes_title: "Один плагін для найчастіших задач монтажу",
+        modes_subtitle: "Перемикайтеся між прив'язкою графічних шарів та фіксацією камери на об'єкті однією кнопкою у верхній частині панелі.",
+        mode1_title: "Прив'язка шару",
+        mode1_desc: "Прикріплюйте текст, плашки з іменами, стрілки, цінники, стікери або ефекти розмиття до будь-якого рухомого об'єкта у відео.",
+        vid_mode1_placeholder: "Відео: Прив'язка тексту та графіки",
+        mode1_f1: "Зберігає початковий відступ (Offset) шару там, де ви його поставили",
+        mode1_f2: "Працює з титрами, графікою, PNG, відеошарами та вкладеними секвенціями",
+        mode1_f3: "Вибір об'єкта одним кліком (Точка) або виділенням рамки (Зона)",
+        mode2_title: "Центрувати на точці",
+        mode2_desc: "Динамічний ефект стабілізації, де обраний об'єкт або обличчя постійно утримується по центру екрана, а кадр плавно рухається навколо нього.",
+        vid_mode2_placeholder: "Відео: Центрування на точці (Lock-on)",
+        mode2_f1: "Окремий цільовий шар не потрібен — ключі ставляться прямо на кліп",
+        mode2_f2: "Автоматичне масштабування кадру, щоб уникати появи чорних полів по краях",
+        mode2_f3: "Чудово підходить для динамічних переходів у Reels, TikTok, Shorts та кліпах",
+        feat_tag: "Зручність та Функції",
+        feat_title: "Продуманий до дрібниць робочий процес",
+        feat_subtitle: "Усі необхідні інструменти зібрані в одній компактній панелі, щоб ви витрачали мінімум часу на технічну рутину.",
+        f1_title: "Режими «Точка» та «Зона»",
+        f1_desc: "Клікніть у потрібну деталь для швидкого точкового трекінгу або намалюйте рамку навколо об'єкта. Розміри рамок легко регулюються повзунками чи мишкою прямо на прев'ю.",
+        f2_title: "Зручне прев'ю із зумом і панорамуванням",
+        f2_desc: "Наближайте кадр коліщатком миші або кнопками (+, −, 1:1, Fit), щоб легко вибрати навіть дрібну деталь, і переміщуйтесь по кадру за допомогою Space + перетягування.",
+        f3_title: "Силуетний режим для складних цілей",
+        f3_desc: "Спеціальний режим «Силует» дозволяє впевнено трекувати однотонні об'єкти: пальці, жести рук, мультяшних персонажів та плоскі графічні елементи.",
+        f4_title: "Трекінг від курсора (CTI)",
+        f4_desc: "Починайте трекінг саме з тієї секунди, де стоїть курсор на таймлайні. Натисніть «⟳ Оновити кадр», вкажіть об'єкт і записуйте ключі тільки на потрібному відрізку.",
+        f5_title: "Згладжування та вибір кроку ключів",
+        f5_desc: "Опція згладжування робить рух плавним і прибирає тремтіння камери. Обирайте частоту запису ключів: кожен кадр, кожні 2 або кожні 5 кадрів.",
+        f6_title: "Темна / Світла теми та мови UA / EN",
+        f6_desc: "Сучасний чистий інтерфейс із миттєвим перемиканням між темною та світлою темами, а також повною підтримкою української та англійської мов.",
+        ex_tag: "Приклади використання",
+        ex_title: "Як AutoTracker допомагає у реальних проєктах",
+        ex_subtitle: "Від розмовних відео та оглядів до динамічних кліпів і коротких вертикальних роликів.",
+        ex1_vid_placeholder: "Відео-приклад #1",
+        ex1_title: "Текстові плашки та виноски",
+        ex1_desc: "Прикріплюйте підписи, ціни, характеристики чи інфографіку, які плавно слідують за людиною або предметом у кадрі.",
+        ex2_vid_placeholder: "Відео-приклад #2",
+        ex2_title: "Динамічний Lock-on ефект",
+        ex2_desc: "Утримуйте увагу глядача на головному об'єкті в динамічних сценах спорту, танців, автооглядів чи тревел-блогів.",
+        ex3_vid_placeholder: "Відео-приклад #3",
+        ex3_title: "Трекінг жестів та дрібних деталей",
+        ex3_desc: "Прив'язуйте іконки, стікери або ефекти безпосередньо до руху руки чи кінчика пальця за допомогою силуетного режиму.",
+        comp_tag: "Економія часу",
+        comp_title: "Більше ніякої ручної рутини з ключами",
+        comp_subtitle: "Замість того щоб вручну пересувати об'єкт кадр за кадром, довірте відстеження автоматиці та зосередьтесь на творчому монтажі.",
+        comp_old_title: "Ручне розставляння ключів",
+        comp_old_time: "15–20 хвилин",
+        comp_old_1: "Втомливе переміщення шару мишкою на кожному окремому кадрі таймлайну.",
+        comp_old_2: "Помітні ривки та нерівномірне плавання тексту через людський фактор.",
+        comp_old_3: "Якщо потрібно змінити позицію плашки — доводиться переробляти всі ключі заново.",
+        comp_old_4: "Величезні витрати часу на простих щоденних задачах монтажу.",
+        comp_new_title: "Автоматично з AutoTracker",
+        comp_new_time: "Кілька секунд",
+        comp_new_1: "Простий процес у 3 кліки: завантажили кліп, вказали ціль, натиснули «Старт трекінгу».",
+        comp_new_2: "Плавний і природний рух завдяки вбудованому автоматичному згладжуванню траєкторії.",
+        comp_new_3: "Створює стандартні ключові кадри Motion прямо на кліпі у вашому таймлайні.",
+        comp_new_4: "Повний контроль: змінюйте текст, шрифт або колір прив'язаного шару в будь-який момент.",
+        price_tag: "Тарифи",
+        price_title: "Прозорі умови для кожного монтажера",
+        price_subtitle: "Оберіть зручну підписку або придбайте постійну ліцензію один раз і назавжди. Працює повністю локально на вашому ПК.",
+        plan1_name: "Місячна підписка",
+        plan1_desc: "Для разових проєктів та швидкого старту без зобов'язань.",
+        plan1_period: "/ місяць",
+        plan1_save: "Скасування у будь-який момент",
+        plan1_btn: "Обрати Місячний",
+        plan2_ribbon: "Хіт продажу • Best Value",
+        plan2_name: "Постійна ліцензія (Lifetime Pro)",
+        plan2_desc: "Платіть один раз — користуйтеся назавжди без жодних щомісячних платежів.",
+        plan2_period: "одноразово",
+        plan2_save: "Назавжди • Окупається за перші проєкти",
+        plan2_btn: "Купити Lifetime Pro",
+        plan3_name: "Річна підписка",
+        plan3_desc: "Оптимальний вибір для регулярного відеомонтажу.",
+        plan3_period: "/ рік",
+        plan3_save: "Економія 45% ($6.58 / міс)",
+        plan3_btn: "Обрати Річний",
+        pf_all_modes: "Обидва режими: Прив'язка шару та Lock-on Center",
+        pf_ai: "Вибір Точки (◉), Зони (☐) та Силуетний режим",
+        pf_1pc: "Активація на 1 робочому ПК",
+        pf_2pc: "До 2 ПК одночасно",
+        pf_3pc: "До 3 ПК одночасно (робочий ПК + ноутбук)",
+        pf_updates_sub: "Усі оновлення протягом дії підписки",
+        pf_updates_life: "Усі оновлення v1.x та пріоритетна підтримка",
+        faq_tag: "Питання та відповіді",
+        faq_title: "Часті запитання (FAQ)",
+        faq_subtitle: "Відповіді на основні питання щодо встановлення та щоденної роботи з AutoTracker.",
+        faq1_q: "Які версії Adobe Premiere Pro підтримуються?",
+        faq1_a: "AutoTracker працює в Adobe Premiere Pro версій 2020 (v14.0) і новіших, включно з актуальними релізами 2024, 2025 та 2026+ на Windows 10 та Windows 11 (64-bit).",
+        faq2_q: "Чи відкриється проєкт у іншого монтажера, якщо в нього немає цього плагіна?",
+        faq2_a: "Так, без жодних проблем! Плагін створює стандартні нативні ключові кадри ефекту Motion (Position) прямо на кліпі у Premiere Pro. Ви можете передати проєкт клієнту чи колезі — уся анімація збережеться.",
+        faq3_q: "Чи потрібен постійний інтернет для роботи плагіна?",
+        faq3_a: "Ні. Увесь аналіз кадрів і трекінг виконуються повністю локально на вашому комп'ютері. Ваші відеофайли нікуди не відправляються.",
+        faq4_q: "Чи можна почати трекінг не з початку кліпу, а з конкретної секунди?",
+        faq4_a: "Так! Поставте курсор таймлайну (Playhead) на потрібний момент, натисніть кнопку «⟳ Оновити кадр» у вікні плагіна та залиште увімкненою галочку «Трекувати від курсора (CTI)».",
+        faq5_q: "Наскільки легко встановлюється плагін?",
+        faq5_a: "У комплекті йде автоматичний інсталятор install.bat — просто запустіть його подвійним кліком. Після відкриття Premiere Pro панель з'явиться у меню Window → Extensions → Auto-Tracker.",
+        faq6_q: "Як перенести ліцензію на інший комп'ютер або ноутбук?",
+        faq6_a: "Натисніть на іконку ключа 🔑 у шапці плагіна та оберіть «Деактивувати (перенести)». Після цього ви одразу зможете активувати цей самий ключ на іншому пристрої.",
+        footer_about: "Зручний плагін автоматичного трекінгу об'єктів та стабілізації для Adobe Premiere Pro. Створено для швидкого та комфортного монтажу.",
+        footer_sysreq_title: "Системні вимоги",
+        footer_sys_1: "Premiere Pro 2020 (v14.0) – 2026+",
+        footer_sys_2: "Windows 10 / 11 (64-bit)",
+        footer_sys_3: "8 GB RAM (рекомендовано 16 GB)",
+        footer_sys_4: "Усі компоненти вже вбудовано",
+        footer_docs_title: "Навігація",
+        footer_doc_1: "Відеоогляд",
+        footer_doc_2: "Режими роботи",
+        footer_doc_3: "Можливості та зручність",
+        footer_doc_4: "Часті запитання (FAQ)",
+        footer_support_title: "Підтримка та покупка",
+        footer_sup_hours: "Пн–Пт: 09:00 – 19:00",
+        footer_sup_buy: "Придбати ліцензію",
+        footer_copy: "© 2026 AutoTracker Plugin. Усі права захищено. Adobe та Premiere Pro є зареєстрованими марками Adobe Inc.",
+        footer_tagline: "Створено для відеомонтажерів та контент-мейкерів"
+      },
+      en: {
+        nav_video: "Video Demo",
+        nav_modes: "Modes",
+        nav_features: "Features",
+        nav_examples: "Examples",
+        nav_pricing: "Pricing",
+        nav_faq: "FAQ",
+        nav_buy: "Buy Now",
+        hero_badge: "Plugin for Adobe Premiere Pro 2020–2026+",
+        hero_title: "Automatic Object Tracking Right Inside <span class=\"highlight\">Adobe Premiere Pro</span>",
+        hero_subtitle: "Pin text, callouts, graphics, or stickers to moving objects, or lock your subject in the center of the frame in just a few clicks. Intuitive point or area selection with instant Motion keyframes right on your timeline.",
+        hero_cta_buy: "Choose License",
+        hero_cta_demo: "Watch Video",
+        metric1_val: "2 Modes",
+        metric1_lbl: "Attach Layer & Lock-on Center",
+        metric2_val: "Point & Area",
+        metric2_lbl: "1-click point or bounding box selection",
+        metric3_val: "Native Keys",
+        metric3_lbl: "Standard Motion keyframes on timeline",
+        demo_mode_attach: "Attach Layer",
+        demo_mode_lockon: "Center on Point",
+        demo_mode_area: "Area Tracking (ROI)",
+        tel_pos: "POSITION X/Y",
+        tel_target: "TARGET MODE",
+        tel_smooth: "SMOOTHING",
+        tel_hw: "ACCELERATION",
+        vid_tag: "Video Overview",
+        vid_title: "See AutoTracker in Action",
+        vid_subtitle: "The entire workflow — from loading a clip and picking a target to having ready keyframes on your timeline — takes just seconds.",
+        vid_main_placeholder: "Main Plugin Demo Video (16:9)",
+        modes_tag: "Two Workflow Modes",
+        modes_title: "One Plugin for Your Essential Editing Tasks",
+        modes_subtitle: "Switch effortlessly between attaching graphic layers and locking the camera onto your subject at the top of the panel.",
+        mode1_title: "Attach Layer",
+        mode1_desc: "Pin text titles, lower thirds, arrows, price tags, stickers, or blur effects to any moving object in your video.",
+        vid_mode1_placeholder: "Video: Attaching Text & Graphics",
+        mode1_f1: "Preserves the initial position (Offset) of your layer relative to the target",
+        mode1_f2: "Works with titles, Essential Graphics, PNGs, video layers, and Nested sequences",
+        mode1_f3: "Select your target with a single click (Point) or by drawing a box (Area)",
+        mode2_title: "Center on Point (Lock-on)",
+        mode2_desc: "Dynamic stabilization effect where your selected object or face stays locked in the center of the screen while the frame moves smoothly around it.",
+        vid_mode2_placeholder: "Video: Center on Point (Lock-on)",
+        mode2_f1: "No separate target layer required — keyframes are applied directly to the clip",
+        mode2_f2: "Automatic frame scaling prevents black borders around the edges",
+        mode2_f3: "Ideal for dynamic transitions in Reels, TikTok, Shorts, and music videos",
+        feat_tag: "Convenience & Features",
+        feat_title: "A Workflow Designed for Comfort",
+        feat_subtitle: "All essential tools are packed into a clean, compact panel so you spend minimal time on repetitive manual tasks.",
+        f1_title: "Point (◉) and Area (☐) Selection",
+        f1_desc: "Click on a specific detail for quick point tracking or draw a box around the object. Box sizes can be adjusted with sliders or directly on the preview canvas.",
+        f2_title: "Interactive Preview with Zoom & Pan",
+        f2_desc: "Zoom in with your mouse wheel or buttons (+, −, 1:1, Fit) to easily pick small details, and pan around the frame using Space + Drag.",
+        f3_title: "Silhouette Mode for Flat Objects",
+        f3_desc: "Dedicated Silhouette mode reliably tracks uniform objects without fine texture: fingers, hand gestures, cartoons, and flat graphic shapes.",
+        f4_title: "Track from Playhead (CTI)",
+        f4_desc: "Start tracking from the exact second where your timeline playhead is parked. Click '⟳ Refresh Frame', pick your object, and track only the segment you need.",
+        f5_title: "Smoothing & Keyframe Step Control",
+        f5_desc: "Built-in smoothing removes camera shake for natural motion. Choose how often keyframes are written: every frame, every 2 frames, or every 5 frames.",
+        f6_title: "Dark / Light Themes & UA / EN UI",
+        f6_desc: "Clean modern interface with instant switching between Dark and Light themes, plus full Ukrainian and English localization.",
+        ex_tag: "Use Cases",
+        ex_title: "How AutoTracker Helps in Real Projects",
+        ex_subtitle: "From talking-head videos and product reviews to dynamic music videos and vertical shorts.",
+        ex1_vid_placeholder: "Video Example #1",
+        ex1_title: "Text Callouts & Info Cards",
+        ex1_desc: "Attach speaker names, product prices, specs, or callout boxes that smoothly follow a person or item across the shot.",
+        ex2_vid_placeholder: "Video Example #2",
+        ex2_title: "Dynamic Lock-on Stabilization",
+        ex2_desc: "Keep viewer focus locked onto the main subject in sports highlights, dance videos, car reviews, or travel vlogs.",
+        ex3_vid_placeholder: "Video Example #3",
+        ex3_title: "Hand Gestures & Small Details",
+        ex3_desc: "Pin icons, stickers, or visual effects directly to hand movements or fingertips using the Silhouette detection mode.",
+        comp_tag: "Time Saver",
+        comp_title: "Say Goodbye to Tedious Manual Keyframing",
+        comp_subtitle: "Instead of nudging layers frame by frame with your mouse, let automation handle the tracking while you focus on creative editing.",
+        comp_old_title: "Manual Keyframing",
+        comp_old_time: "15–20 minutes",
+        comp_old_1: "Exhausting frame-by-frame layer positioning with the mouse on the timeline.",
+        comp_old_2: "Noticeable jitter and uneven floating text caused by manual adjustments.",
+        comp_old_3: "Changing the callout design or offset means redoing keyframes all over again.",
+        comp_old_4: "Hours wasted on simple everyday editing tasks.",
+        comp_new_title: "Automatically with AutoTracker",
+        comp_new_time: "Just seconds",
+        comp_new_1: "Simple 3-step workflow: load clip, click target, press 'Start Tracking'.",
+        comp_new_2: "Smooth, natural movement thanks to built-in trajectory smoothing.",
+        comp_new_3: "Writes standard native Motion keyframes directly onto your timeline clip.",
+        comp_new_4: "Full creative control: edit text, font, or color of the attached layer anytime.",
+        price_tag: "Pricing",
+        price_title: "Simple Options for Every Video Editor",
+        price_subtitle: "Choose a flexible subscription or get a Lifetime license once and for all. Runs 100% locally on your PC.",
+        plan1_name: "Monthly Subscription",
+        plan1_desc: "Great for short-term projects and getting started with zero commitment.",
+        plan1_period: "/ month",
+        plan1_save: "Cancel anytime with one click",
+        plan1_btn: "Choose Monthly",
+        plan2_ribbon: "Best Seller • Best Value",
+        plan2_name: "Lifetime Pro License",
+        plan2_desc: "Pay once, use forever — no monthly bills or recurring charges.",
+        plan2_period: "one-time",
+        plan2_save: "Yours Forever • Pays for itself quickly",
+        plan2_btn: "Buy Lifetime Pro",
+        plan3_name: "Annual Subscription",
+        plan3_desc: "Optimal choice for regular video editing and content creation.",
+        plan3_period: "/ year",
+        plan3_save: "Save 45% ($6.58 / mo)",
+        plan3_btn: "Choose Annual",
+        pf_all_modes: "Both modes: Attach Layer & Lock-on Center",
+        pf_ai: "Point (◉), Area (☐) & Silhouette Mode",
+        pf_1pc: "Activation on 1 PC",
+        pf_2pc: "Up to 2 PCs simultaneously",
+        pf_3pc: "Up to 3 PCs simultaneously (desktop + laptop)",
+        pf_updates_sub: "All updates included during subscription",
+        pf_updates_life: "All v1.x updates & priority support",
+        faq_tag: "Questions & Answers",
+        faq_title: "Frequently Asked Questions (FAQ)",
+        faq_subtitle: "Answers to common questions about installing and using AutoTracker.",
+        faq1_q: "Which versions of Adobe Premiere Pro are supported?",
+        faq1_a: "AutoTracker works in Adobe Premiere Pro 2020 (v14.0) and newer, including 2024, 2025, and 2026+ releases on Windows 10 and Windows 11 (64-bit).",
+        faq2_q: "Will my project open on another computer that doesn't have the plugin?",
+        faq2_a: "Yes! The plugin creates standard native Motion (Position) keyframes directly on the clip in Premiere Pro. You can share the project file with anyone and all animations stay intact.",
+        faq3_q: "Is a constant internet connection required to use the plugin?",
+        faq3_a: "No. Frame analysis and tracking run completely locally on your computer. Your video files are never uploaded anywhere.",
+        faq4_q: "Can I start tracking from a specific second instead of the start of the clip?",
+        faq4_a: "Yes! Place your timeline playhead at the desired moment, click '⟳ Refresh Frame' in the plugin, and keep 'Track from playhead (CTI)' checked.",
+        faq5_q: "How easy is it to install the plugin?",
+        faq5_a: "An automatic installer (install.bat) is included — just double-click it. Next time you open Premiere Pro, you'll find the panel under Window → Extensions → Auto-Tracker.",
+        faq6_q: "How do I transfer my license to another computer or laptop?",
+        faq6_a: "Click the key icon 🔑 in the plugin header and select 'Deactivate (transfer)'. You can then immediately activate the same key on your new device.",
+        footer_about: "Easy-to-use automatic object tracking and stabilization plugin for Adobe Premiere Pro. Built for fast, comfortable video editing.",
+        footer_sysreq_title: "System Requirements",
+        footer_sys_1: "Premiere Pro 2020 (v14.0) – 2026+",
+        footer_sys_2: "Windows 10 / 11 (64-bit)",
+        footer_sys_3: "8 GB RAM (16 GB recommended)",
+        footer_sys_4: "All required components included",
+        footer_docs_title: "Navigation",
+        footer_doc_1: "Video Overview",
+        footer_doc_2: "Workflow Modes",
+        footer_doc_3: "Features & Convenience",
+        footer_doc_4: "Frequently Asked Questions",
+        footer_support_title: "Support & Purchase",
+        footer_sup_hours: "Mon–Fri: 09:00 – 19:00",
+        footer_sup_buy: "Purchase License",
+        footer_copy: "© 2026 AutoTracker Plugin. All rights reserved. Adobe and Premiere Pro are registered trademarks of Adobe Inc.",
+        footer_tagline: "Built for video editors and content creators"
+      }
+    };
+
+    function setLanguage(lang) {
+      currentLang = lang === "en" ? "en" : "uk";
+      rootHtml.setAttribute("lang", currentLang);
+      if (langLabel) {
+        langLabel.textContent = currentLang === "uk" ? "UA" : "EN";
+      }
+
+      const dict = translations[currentLang];
+      document.querySelectorAll("[data-i18n]").forEach((el) => {
+        const key = el.getAttribute("data-i18n");
+        if (dict[key]) {
+          if (key === "hero_title") {
+            el.innerHTML = dict[key];
+          } else {
+            el.textContent = dict[key];
+          }
+        }
+      });
+
+      updateTelemetryLabels();
+
+      try {
+        localStorage.setItem("autotracker_lang", currentLang);
+      } catch (e) {}
+    }
+
+    const savedLang = (() => {
+      try {
+        return localStorage.getItem("autotracker_lang");
+      } catch (e) {
+        return null;
+      }
+    })();
+    if (savedLang === "en" || savedLang === "uk") {
+      setLanguage(savedLang);
+    }
+
+    if (langToggleBtn) {
+      langToggleBtn.addEventListener("click", () => {
+        setLanguage(currentLang === "uk" ? "en" : "uk");
+      });
+    }
+
+    // Інтерактивний акордеон FAQ
+    document.querySelectorAll(".faq-question").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const item = btn.parentElement;
+        const answer = item.querySelector(".faq-answer");
+        const isOpen = item.classList.contains("open");
+
+        document.querySelectorAll(".faq-item").forEach((other) => {
+          other.classList.remove("open");
+          other.querySelector(".faq-question").setAttribute("aria-expanded", "false");
+          other.querySelector(".faq-answer").style.maxHeight = null;
+        });
+
+        if (!isOpen) {
+          item.classList.add("open");
+          btn.setAttribute("aria-expanded", "true");
+          answer.style.maxHeight = answer.scrollHeight + "px";
+        }
+      });
+    });
+
+    // ================= ІНТЕРАКТИВНИЙ HTML5 CANVAS ТРЕКЕР =================
+    document.querySelectorAll(".mode-tab").forEach((tab) => {
+      tab.addEventListener("click", () => {
+        document.querySelectorAll(".mode-tab").forEach((b) => b.classList.remove("active"));
+        tab.classList.add("active");
+        activeDemoMode = tab.getAttribute("data-mode") || "attach";
+        trail.length = 0;
+        updateTelemetryLabels();
+      });
+    });
+
+    function drawRoundedRect(ctx, x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+      ctx.lineTo(x + w, y + h - r);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      ctx.lineTo(x + r, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+      ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
+      ctx.closePath();
+    }
+
+    function drawTrackerBox(cx, cy, featureSize, searchSize, label) {
+      const hs = searchSize / 2;
+      const hf = featureSize / 2;
+
+      // Search Box (dashed Royal Purple)
+      ctx.save();
+      ctx.strokeStyle = "#8b5cf6";
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([5, 4]);
+      ctx.strokeRect(cx - hs, cy - hs, searchSize, searchSize);
+      ctx.restore();
+
+      // Feature Box (solid Emerald)
+      ctx.save();
+      ctx.strokeStyle = "#10b981";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(cx - hf, cy - hf, featureSize, featureSize);
+
+      // Кутові маркери Feature Box
+      const cLen = 6;
+      ctx.fillStyle = "#10b981";
+      ctx.fillRect(cx - hf - 2, cy - hf - 2, cLen, 2);
+      ctx.fillRect(cx - hf - 2, cy - hf - 2, 2, cLen);
+      ctx.fillRect(cx + hf - cLen + 2, cy - hf - 2, cLen, 2);
+      ctx.fillRect(cx + hf, cy - hf - 2, 2, cLen);
+      ctx.fillRect(cx - hf - 2, cy + hf, cLen, 2);
+      ctx.fillRect(cx - hf - 2, cy + hf - cLen + 2, 2, cLen);
+      ctx.fillRect(cx + hf - cLen + 2, cy + hf, cLen, 2);
+      ctx.fillRect(cx + hf, cy + hf - cLen + 2, 2, cLen);
+
+      // Центральне перехрестя
+      ctx.beginPath();
+      ctx.moveTo(cx - 6, cy);
+      ctx.lineTo(cx + 6, cy);
+      ctx.moveTo(cx, cy - 6);
+      ctx.lineTo(cx, cy + 6);
+      ctx.stroke();
+
+      if (label) {
+        ctx.font = "600 11px Consolas, monospace";
+        ctx.fillStyle = "#10b981";
+        ctx.fillText(label, cx - hf, cy - hf - 6);
+      }
+      ctx.restore();
+    }
+
+    function renderFrame() {
+      if (!canvas || !ctx) return;
+      t += 0.024;
+      const W = canvas.width;
+      const H = canvas.height;
+      ctx.clearRect(0, 0, W, H);
+
+      // Обчислення траєкторії цілі
+      const rawOffsetX = Math.sin(t * 1.15) * 125 + Math.cos(t * 0.6) * 35;
+      const rawOffsetY = Math.sin(t * 2.3) * 48;
+
+      const isLockOn = activeDemoMode === "lockon";
+      const worldShiftX = isLockOn ? -rawOffsetX : 0;
+      const worldShiftY = isLockOn ? -rawOffsetY : 0;
+
+      const objX = isLockOn ? W / 2 : W / 2 + rawOffsetX;
+      const objY = isLockOn ? H / 2 : H / 2 + rawOffsetY;
+
+      // 1. Фон сцени та координатна сітка (рухається у режимі Lock-on)
+      ctx.save();
+      ctx.fillStyle = "#111115";
+      ctx.fillRect(0, 0, W, H);
+
+      const gridStep = 40;
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.045)";
+      ctx.lineWidth = 1;
+
+      const startX = ((worldShiftX % gridStep) + gridStep) % gridStep;
+      const startY = ((worldShiftY % gridStep) + gridStep) % gridStep;
+
+      for (let x = startX; x < W; x += gridStep) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, H);
+        ctx.stroke();
+      }
+      for (let y = startY; y < H; y += gridStep) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(W, y);
+        ctx.stroke();
+      }
+
+      // Декоративні орієнтири сцени на задньому плані
+      const landmarks = [
+        { x: 110, y: 75, r: 22 },
+        { x: 480, y: 82, r: 28 },
+        { x: 140, y: 235, r: 18 },
+        { x: 465, y: 225, r: 24 }
+      ];
+      landmarks.forEach((lm) => {
+        const lx = lm.x + worldShiftX * 0.85;
+        const ly = lm.y + worldShiftY * 0.85;
+        ctx.strokeStyle = "rgba(139, 92, 246, 0.16)";
+        ctx.beginPath();
+        ctx.arc(lx, ly, lm.r, 0, Math.PI * 2);
+        ctx.stroke();
+      });
+      ctx.restore();
+
+      // Запис сліду траєкторії
+      trail.push({ x: objX, y: objY });
+      if (trail.length > 45) trail.shift();
+
+      if (!isLockOn && trail.length > 2) {
+        ctx.save();
+        ctx.beginPath();
+        for (let i = 0; i < trail.length; i++) {
+          const p = trail[i];
+          if (i === 0) ctx.moveTo(p.x, p.y);
+          else ctx.lineTo(p.x, p.y);
+        }
+        ctx.strokeStyle = "rgba(124, 58, 237, 0.45)";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // 2. Візуалізація залежно від обраного демо-режиму
+      if (activeDemoMode === "attach") {
+        ctx.save();
+        ctx.fillStyle = "rgba(124, 58, 237, 0.22)";
+        ctx.beginPath();
+        ctx.arc(objX, objY, 18, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+
+        drawTrackerBox(objX, objY, 44, 82, "TRACK POINT");
+
+        // Прив'язаний текстовий шар
+        const boxX = objX + 34;
+        const boxY = objY - 66;
+        ctx.save();
+        ctx.strokeStyle = "#e5e7eb";
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(objX + 12, objY - 12);
+        ctx.lineTo(boxX, boxY + 28);
+        ctx.lineTo(boxX + 148, boxY + 28);
+        ctx.stroke();
+
+        drawRoundedRect(ctx, boxX, boxY, 152, 32, 6);
+        ctx.fillStyle = "rgba(30, 30, 34, 0.92)";
+        ctx.fill();
+        ctx.strokeStyle = "#7c3aed";
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        ctx.fillStyle = "#f9fafb";
+        ctx.font = "700 11px -apple-system, BlinkMacSystemFont, sans-serif";
+        ctx.fillText("ATTACHED TEXT LAYER", boxX + 10, boxY + 14);
+        ctx.fillStyle = "#10b981";
+        ctx.font = "600 10px Consolas, monospace";
+        ctx.fillText(`X:${Math.round(960 + rawOffsetX)} Y:${Math.round(540 + rawOffsetY)}`, boxX + 10, boxY + 26);
+        ctx.restore();
+
+      } else if (activeDemoMode === "lockon") {
+        const vpW = 440;
+        const vpH = 230;
+        const vpX = (W - vpW) / 2 + worldShiftX * 0.35;
+        const vpY = (H - vpH) / 2 + worldShiftY * 0.35;
+
+        ctx.save();
+        ctx.strokeStyle = "rgba(139, 92, 246, 0.55)";
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([6, 4]);
+        ctx.strokeRect(vpX, vpY, vpW, vpH);
+        ctx.setLineDash([]);
+        ctx.fillStyle = "#8b5cf6";
+        ctx.font = "600 10px Consolas, monospace";
+        ctx.fillText("LOCK-ON VIEWPORT", vpX + 8, vpY - 6);
+        ctx.restore();
+
+        ctx.save();
+        ctx.fillStyle = "rgba(16, 185, 129, 0.2)";
+        ctx.beginPath();
+        ctx.arc(objX, objY, 20, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+
+        drawTrackerBox(objX, objY, 46, 84, "CENTER LOCKED");
+
+      } else if (activeDemoMode === "area") {
+        // Трекінг виділеної зони ROI (Area Mode)
+        const roiW = 116;
+        const roiH = 74;
+        const rx = objX - roiW / 2;
+        const ry = objY - roiH / 2;
+
+        ctx.save();
+        drawRoundedRect(ctx, rx + 8, ry + 8, roiW - 16, roiH - 16, 8);
+        ctx.fillStyle = "rgba(124, 58, 237, 0.2)";
+        ctx.fill();
+
+        // Рамка ROI
+        ctx.strokeStyle = "#8b5cf6";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(rx, ry, roiW, roiH);
+
+        // Кутові маркери ROI
+        const handleSize = 6;
+        ctx.fillStyle = "#10b981";
+        ctx.fillRect(rx - handleSize / 2, ry - handleSize / 2, handleSize, handleSize);
+        ctx.fillRect(rx + roiW - handleSize / 2, ry - handleSize / 2, handleSize, handleSize);
+        ctx.fillRect(rx - handleSize / 2, ry + roiH - handleSize / 2, handleSize, handleSize);
+        ctx.fillRect(rx + roiW - handleSize / 2, ry + roiH - handleSize / 2, handleSize, handleSize);
+
+        // Центральна позначка
+        ctx.strokeStyle = "#10b981";
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(objX - 5, objY);
+        ctx.lineTo(objX + 5, objY);
+        ctx.moveTo(objX, objY - 5);
+        ctx.lineTo(objX, objY + 5);
+        ctx.stroke();
+
+        ctx.fillStyle = "#10b981";
+        ctx.font = "600 11px Consolas, monospace";
+        ctx.fillText(`ROI: ${roiW}×${roiH}`, rx, ry - 7);
+        ctx.restore();
+      }
+
+      // Оновлення показників панелі
+      if (telPos) {
+        const dispX = Math.round(960 + (isLockOn ? 0 : rawOffsetX));
+        const dispY = Math.round(540 + (isLockOn ? 0 : rawOffsetY));
+        telPos.textContent = `${dispX}, ${dispY}`;
+      }
+
+      requestAnimationFrame(renderFrame);
+    }
+
+    updateTelemetryLabels();
+    requestAnimationFrame(renderFrame);
+  </script>
+</body>
+</html>
