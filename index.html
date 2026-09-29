@@ -1683,7 +1683,7 @@
               <div class="plan-name" data-i18n="plan1_name">Місячна підписка</div>
               <p class="plan-desc" data-i18n="plan1_desc">Для разових проєктів та швидкого старту без зобов'язань.</p>
               <div class="price-amount">
-                <span class="price-currency">$12</span>
+                <span class="price-currency">$5</span>
                 <span class="price-period" data-i18n="plan1_period">/ місяць</span>
               </div>
               <span class="price-save" data-i18n="plan1_save">Скасування у будь-який момент</span>
@@ -1705,7 +1705,7 @@
               <div class="plan-name" data-i18n="plan2_name">Постійна ліцензія (Lifetime Pro)</div>
               <p class="plan-desc" data-i18n="plan2_desc">Платіть один раз — користуйтеся назавжди без жодних щомісячних платежів.</p>
               <div class="price-amount">
-                <span class="price-currency">$149</span>
+                <span class="price-currency">$39</span>
                 <span class="price-period" data-i18n="plan2_period">одноразово</span>
               </div>
               <span class="price-save" data-i18n="plan2_save">Назавжди • Окупається за перші проєкти</span>
@@ -1726,10 +1726,10 @@
               <div class="plan-name" data-i18n="plan3_name">Річна підписка</div>
               <p class="plan-desc" data-i18n="plan3_desc">Оптимальний вибір для регулярного відеомонтажу.</p>
               <div class="price-amount">
-                <span class="price-currency">$79</span>
+                <span class="price-currency">$29</span>
                 <span class="price-period" data-i18n="plan3_period">/ рік</span>
               </div>
-              <span class="price-save" data-i18n="plan3_save">Економія 45% ($6.58 / міс)</span>
+              <span class="price-save" data-i18n="plan3_save">Економія понад 50% ($2.42 / міс)</span>
 
               <ul class="plan-features">
                 <li><span class="plan-check">✓</span> <span data-i18n="pf_all_modes">Обидва режими: Прив'язка шару та Lock-on Center</span></li>
@@ -1943,14 +1943,14 @@
         if (CHECKOUT_URL.includes("checkout.autotracker-plugin.com")) {
           e.preventDefault();
           const planNamesUk = {
-            monthly: "Місячна підписка ($12)",
-            lifetime: "Постійна ліцензія Lifetime Pro ($149)",
-            annual: "Річна підписка ($79)"
+            monthly: "Місячна підписка ($5)",
+            lifetime: "Постійна ліцензія Lifetime Pro ($39)",
+            annual: "Річна підписка ($29)"
           };
           const planNamesEn = {
-            monthly: "Monthly Subscription ($12)",
-            lifetime: "Lifetime Pro License ($149)",
-            annual: "Annual Subscription ($79)"
+            monthly: "Monthly Subscription ($5)",
+            lifetime: "Lifetime Pro License ($39)",
+            annual: "Annual Subscription ($29)"
           };
           if (currentLang === "en") {
             showToast(`<strong>Selected: ${planNamesEn[plan] || plan}</strong><br><span style="color:var(--text-muted);font-size:0.82rem;">Paste your Lemon Squeezy or Gumroad link into <code>CHECKOUT_URL</code> inside <code>landing/index.html</code>.</span>`);
@@ -2148,7 +2148,7 @@
         plan3_name: "Річна підписка",
         plan3_desc: "Оптимальний вибір для регулярного відеомонтажу.",
         plan3_period: "/ рік",
-        plan3_save: "Економія 45% ($6.58 / міс)",
+        plan3_save: "Економія понад 50% ($2.42 / міс)",
         plan3_btn: "Обрати Річний",
         pf_all_modes: "Обидва режими: Прив'язка шару та Lock-on Center",
         pf_ai: "Вибір Точки (◉), Зони (☐) та Силуетний режим",
@@ -2290,7 +2290,7 @@
         plan3_name: "Annual Subscription",
         plan3_desc: "Optimal choice for regular video editing and content creation.",
         plan3_period: "/ year",
-        plan3_save: "Save 45% ($6.58 / mo)",
+        plan3_save: "Save over 50% ($2.42 / mo)",
         plan3_btn: "Choose Annual",
         pf_all_modes: "Both modes: Attach Layer & Lock-on Center",
         pf_ai: "Point (◉), Area (☐) & Silhouette Mode",
