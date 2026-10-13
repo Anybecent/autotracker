@@ -1,0 +1,1357 @@
+<!DOCTYPE html>
+<html lang="uk" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AutoTracker v1.0 — Автоматичний трекінг об'єктів у Adobe Premiere Pro</title>
+  <meta name="description" content="AutoTracker v1.0 — зручний плагін для автоматичного трекінгу об'єктів, прив'язки шарів та фіксації камери (Lock-on Center) прямо на таймлайні Adobe Premiere Pro." />
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  
+  <style>
+/* CSS VARIABLES */
+:root {
+  --surface-void:      #07080a;
+  --surface-base:      #0d0e12;
+  --surface-card:      #13151b;
+  --surface-elevated:  #1a1d24;
+  --surface-highlight: #222630;
+  --border-subtle:     rgba(255,255,255,0.07);
+  --border-active:     rgba(212,255,0,0.4);
+  --border-cyan:       rgba(0,240,255,0.35);
+  --accent-lime:       #d4ff00;
+  --accent-lime-dim:   rgba(212,255,0,0.12);
+  --accent-cyan:       #00f0ff;
+  --accent-cyan-dim:   rgba(0,240,255,0.12);
+  --accent-amber:      #ff8400;
+  --text-pure:         #ffffff;
+  --text-primary:      #e6e8ec;
+  --text-muted:        #8a8f9c;
+  --text-faint:        #4e5361;
+  --font-display:      'Inter', -apple-system, sans-serif;
+  --font-mono:         'JetBrains Mono', 'SF Mono', Consolas, monospace;
+}
+
+[data-theme="light"] {
+  --surface-void:      #f5f6f8;
+  --surface-base:      #f5f6f8;
+  --surface-card:      #ffffff;
+  --surface-elevated:  #eef0f4;
+  --surface-highlight: #e0e4eb;
+  --border-subtle:     rgba(0,0,0,0.07);
+  --border-active:     rgba(180, 215, 0, 0.4);
+  --border-cyan:       rgba(0,180,200,0.35);
+  --accent-lime:       #aacc00;
+  --accent-lime-dim:   rgba(180,215,0,0.12);
+  --accent-cyan:       #00b4c8;
+  --accent-cyan-dim:   rgba(0,180,200,0.12);
+  --accent-amber:      #cc6a00;
+  --text-pure:         #111827;
+  --text-primary:      #111827;
+  --text-muted:        #4b5563;
+  --text-faint:        #6b7280;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: var(--font-display);
+  background: var(--surface-void);
+  color: var(--text-primary);
+  line-height: 1.6;
+}
+html { scroll-behavior: smooth; }
+
+.container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+.text-lime { color: var(--accent-lime); }
+.text-cyan { color: var(--accent-cyan); }
+
+/* NAVBAR */
+.navbar {
+  position: fixed; top: 0; left: 0; width: 100%; height: 60px;
+  background: rgba(7,8,10,0.92);
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border-subtle);
+  z-index: 1000;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 24px;
+  transition: border-bottom-color 0.3s;
+}
+[data-theme="light"] .navbar { background: rgba(245,246,248,0.92); }
+.navbar.scrolled { border-bottom-color: var(--border-active); }
+
+.nav-logo { display: flex; align-items: center; gap: 8px; font-weight: 700; color: var(--text-pure); }
+.logo-hex { color: var(--accent-lime); }
+.nav-links { display: flex; gap: 24px; list-style: none; }
+.nav-links a { color: var(--text-muted); text-decoration: none; font-weight: 500; font-size: 0.9rem; transition: color 0.2s; }
+.nav-links a:hover { color: var(--text-pure); }
+
+.nav-actions { display: flex; align-items: center; gap: 12px; }
+.rec-badge { color: #ff4444; }
+
+.btn-lime {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 12px 28px; background: var(--accent-lime);
+  color: #07080a; font-weight: 700; font-size: 0.9rem;
+  border-radius: 6px; text-decoration: none; border: none;
+  cursor: pointer; transition: transform 0.15s, box-shadow 0.15s;
+}
+.btn-lime:hover {
+  transform: translateY(-1px); box-shadow: 0 4px 20px rgba(212, 255, 0, 0.4);
+}
+.btn-ghost {
+  display: inline-flex; align-items: center; padding: 12px 28px;
+  background: transparent; color: var(--text-primary);
+  border: 1px solid var(--border-subtle); border-radius: 6px;
+  text-decoration: none; font-weight: 500; transition: border-color 0.2s, color 0.2s;
+}
+.btn-ghost:hover { border-color: var(--accent-lime); color: var(--accent-lime); }
+
+#langToggle, #themeToggle {
+  background: transparent; border: 1px solid var(--border-subtle);
+  color: var(--text-primary); padding: 6px 10px; border-radius: 4px;
+  cursor: pointer; font-family: var(--font-mono); font-size: 0.8rem;
+}
+#langToggle:hover, #themeToggle:hover { border-color: var(--accent-lime); }
+
+/* TAG MONO */
+.tag-mono {
+  font-family: var(--font-mono); font-size: 0.7rem;
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-faint);
+}
+
+/* SECTION GLOBAL */
+section { padding: 100px 0; }
+.section-header { text-align: center; margin-bottom: 60px; }
+.section-tag { margin-bottom: 12px; display: inline-block; }
+.section-header h2 { font-size: 2.5rem; margin-bottom: 16px; color: var(--text-pure); }
+.section-header p { font-size: 1.1rem; color: var(--text-muted); max-width: 600px; margin: 0 auto; }
+
+/* HERO */
+#hero { padding-top: 120px; }
+.hero-grid { display: grid; grid-template-columns: 55% 45%; gap: 40px; align-items: center; }
+.hero-badge { display: inline-block; padding: 4px 12px; border: 1px solid var(--border-subtle); border-radius: 4px; margin-bottom: 24px; }
+.hero-title { font-size: 3.5rem; line-height: 1.1; margin-bottom: 24px; color: var(--text-pure); }
+.hero-sub { font-size: 1.2rem; color: var(--text-muted); margin-bottom: 32px; }
+.hero-cta { display: flex; gap: 16px; margin-bottom: 48px; }
+.hero-metrics { display: flex; gap: 32px; padding-top: 32px; border-top: 1px solid var(--border-subtle); }
+.metric-pill { display: flex; flex-direction: column; }
+.metric-val { font-size: 1.2rem; font-weight: 700; color: var(--text-pure); }
+.metric-lbl { font-size: 0.85rem; color: var(--text-muted); }
+
+/* CANVAS DEMO */
+.hud-frame { position: relative; border: 1px solid var(--border-subtle); border-radius: 8px; background: var(--surface-base); }
+.hud-frame::before {
+  content: ''; position: absolute; inset: -2px; background: transparent; border: 0; pointer-events: none; z-index: 2;
+  box-shadow: 
+    -1px -1px 0 var(--border-active),
+    1px -1px 0 var(--border-active),
+    -1px 1px 0 var(--border-active),
+    1px 1px 0 var(--border-active);
+  clip-path: polygon(0 0, 10px 0, 10px 2px, 2px 2px, 2px 10px, 0 10px, 0 100%, 2px 100%, 2px calc(100% - 10px), 10px calc(100% - 10px), 10px 100%, calc(100% - 10px) 100%, calc(100% - 10px) calc(100% - 2px), calc(100% - 2px) calc(100% - 2px), calc(100% - 2px) calc(100% - 10px), 100% calc(100% - 10px), 100% 0, calc(100% - 10px) 0, calc(100% - 10px) 2px, calc(100% - 2px) 2px, calc(100% - 2px) 10px, 100% 10px);
+}
+.canvas-wrapper { width: 100%; height: 340px; position: relative; overflow: hidden; }
+#trackerCanvas { width: 100%; height: 100%; display: block; }
+.canvas-hud-tl { position: absolute; top: 12px; left: 12px; }
+.canvas-hud-tr { position: absolute; top: 12px; right: 12px; }
+.canvas-hud-bl { position: absolute; bottom: 12px; left: 12px; }
+.canvas-hud-br { position: absolute; bottom: 12px; right: 12px; color: var(--accent-cyan); }
+.mode-tabs { display: flex; gap: 8px; margin-top: 16px; }
+.mode-tab { flex: 1; padding: 10px; background: var(--surface-card); border: 1px solid var(--border-subtle); color: var(--text-muted); cursor: pointer; border-radius: 6px; font-weight: 500; font-size: 0.9rem; }
+.mode-tab.active { background: var(--accent-lime-dim); border-color: var(--accent-lime); color: var(--accent-lime); }
+
+/* SPOTLIGHT CARD */
+.spotlight-card {
+  position: relative; background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: 12px; overflow: hidden; padding: 32px;
+}
+.spotlight-card::before {
+  content: ''; position: absolute; inset: 0; border-radius: inherit; padding: 1px;
+  background: radial-gradient( 400px circle at var(--mouse-x, -999px) var(--mouse-y, -999px), rgba(212, 255, 0, 0.25), transparent 70% );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor; mask-composite: exclude; pointer-events: none;
+}
+
+/* CUSTOM VIDEO PLAYER */
+.custom-player { position: relative; aspect-ratio: 16/9; background: #000; border-radius: 8px; overflow: hidden; margin-top: 40px; }
+.video-element { width: 100%; height: 100%; object-fit: cover; }
+.video-placeholder { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(0,0,0,0.8); z-index: 10; cursor: pointer; }
+.has-video .video-placeholder { display: none; }
+.placeholder-icon { font-size: 2rem; color: var(--accent-lime); margin-bottom: 12px; }
+.placeholder-hint { color: var(--text-muted); font-size: 0.8rem; font-family: var(--font-mono); margin-top: 8px; }
+.player-overlay { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: flex-end; padding: 24px; background: linear-gradient(to top, rgba(0,0,0,0.9), transparent 50%); opacity: 0; transition: opacity 0.3s; z-index: 20; }
+.player-overlay:hover { opacity: 1; }
+.player-play-btn { background: var(--accent-lime); border: none; width: 48px; height: 48px; border-radius: 50%; font-size: 1.2rem; display: flex; align-items: center; justify-content: center; cursor: pointer; margin-bottom: 16px; }
+.player-controls { display: flex; align-items: center; gap: 16px; }
+.player-progress-wrap { flex: 1; height: 6px; background: rgba(255,255,255,0.2); border-radius: 3px; cursor: pointer; position: relative; }
+.player-progress-fill { position: absolute; top: 0; left: 0; height: 100%; background: var(--accent-lime); border-radius: 3px; width: 0%; pointer-events: none; }
+.player-speeds { display: flex; gap: 4px; }
+.spd { background: rgba(255,255,255,0.1); border: none; color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; cursor: pointer; font-family: var(--font-mono); }
+.spd.active { background: var(--accent-lime); color: #000; }
+
+/* MODES */
+.modes-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
+.mode-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+.mode-card h3 { font-size: 1.5rem; color: var(--text-pure); }
+.mode-video { aspect-ratio: 16/9; background: #000; border-radius: 8px; margin-bottom: 24px; position: relative; overflow: hidden; }
+.mode-features { margin-top: 24px; list-style: none; display: flex; flex-direction: column; gap: 12px; }
+.mode-features li { display: flex; gap: 8px; }
+.mode-features li::before { content: '✓'; color: var(--accent-lime); }
+
+/* BENTO GRID */
+.bento-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 24px; }
+.col-span-7 { grid-column: span 7; }
+.col-span-5 { grid-column: span 5; }
+.col-span-6 { grid-column: span 6; }
+.bento-card { background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: 16px; padding: 32px; }
+.bento-card h3 { margin-bottom: 12px; color: var(--text-pure); font-size: 1.25rem; }
+
+/* TIMELINE WIDGET */
+.timeline-widget { background: var(--surface-base); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 16px; margin-top: 24px; }
+.tl-header { display: flex; justify-content: space-between; margin-bottom: 16px; }
+.tl-ruler { height: 24px; position: relative; border-bottom: 1px solid var(--border-subtle); cursor: pointer; }
+.tl-tick { position: absolute; bottom: 0; width: 1px; height: 6px; background: var(--border-subtle); }
+.tl-playhead { position: absolute; top: 0; bottom: 0; width: 2px; background: #ff4444; z-index: 2; pointer-events: none; }
+.tl-playhead::before { content: ''; position: absolute; top: 0; left: -4px; border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 6px solid #ff4444; }
+.tl-track-row { display: flex; align-items: center; padding: 12px 0; }
+.tl-track-label { width: 100px; }
+.tl-track { flex: 1; height: 24px; position: relative; background: rgba(255,255,255,0.02); border-radius: 4px; }
+.kf-diamond {
+  position: absolute; width: 9px; height: 9px; background: var(--surface-card);
+  border: 1.5px solid var(--accent-cyan); transform: translate(-50%, -50%) rotate(45deg);
+  top: 50%; cursor: pointer; transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.kf-diamond.active {
+  background: var(--accent-lime); border-color: #fff;
+  box-shadow: 0 0 8px rgba(212, 255, 0, 0.8); transform: translate(-50%, -50%) rotate(45deg) scale(1.4);
+}
+.tl-preview-bar { height: 4px; background: var(--border-subtle); border-radius: 2px; margin-top: 12px; position: relative; }
+.tl-dot { position: absolute; top: -2px; width: 8px; height: 8px; background: var(--accent-lime); border-radius: 50%; }
+
+/* CALC */
+.time-calc { padding: 40px; text-align: center; margin-bottom: 40px; }
+.calc-header { margin-bottom: 32px; }
+.calc-slider { width: 100%; max-width: 400px; margin-bottom: 40px; accent-color: var(--accent-lime); }
+.calc-result { display: flex; align-items: center; justify-content: center; gap: 40px; }
+.calc-time { font-size: 2.5rem; font-weight: 700; margin: 8px 0; }
+.calc-sub { color: var(--text-muted); font-size: 0.9rem; }
+
+/* PRICING */
+.pricing-unified-box { background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 24px; margin-bottom: 40px; text-align: center; }
+.pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+.pricing-card { background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: 12px; padding: 32px; display: flex; flex-direction: column; position: relative; }
+.pricing-card.popular { border-color: var(--accent-lime); }
+.pricing-card-header { margin-bottom: 24px; }
+.pricing-cat { color: var(--accent-lime); margin-bottom: 8px; }
+.pricing-name { font-size: 1.5rem; color: var(--text-pure); margin-bottom: 8px; }
+.pricing-desc { color: var(--text-muted); font-size: 0.9rem; }
+.pricing-price-box { margin-bottom: 24px; }
+.pricing-price { font-size: 2.5rem; font-weight: 700; color: var(--text-pure); }
+.pricing-period { color: var(--text-muted); }
+.pricing-save { font-size: 0.85rem; color: var(--accent-cyan); margin-top: 4px; }
+.pricing-features { flex: 1; list-style: none; margin-bottom: 32px; }
+.pricing-features li { margin-bottom: 12px; font-size: 0.9rem; display: flex; gap: 8px; }
+.pricing-features li::before { content: '✓'; color: var(--accent-lime); }
+.plan2_ribbon { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: var(--accent-lime); color: #000; padding: 4px 12px; border-radius: 12px; font-weight: 700; }
+
+/* FAQ */
+.faq-list { display: flex; flex-direction: column; gap: 16px; max-width: 800px; margin: 0 auto; }
+.faq-item { background: var(--surface-card); border: 1px solid var(--border-subtle); border-radius: 8px; overflow: hidden; }
+.faq-question { width: 100%; padding: 20px; display: flex; justify-content: space-between; background: transparent; border: none; color: var(--text-pure); font-weight: 600; font-size: 1rem; text-align: left; cursor: pointer; }
+.faq-answer { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; }
+.faq-answer p { padding: 0 20px 20px; color: var(--text-muted); }
+.faq-item.open .faq-answer { max-height: 500px; }
+
+/* FOOTER */
+footer { background: var(--surface-base); border-top: 1px solid var(--border-subtle); padding: 60px 24px 30px; }
+.footer-top { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 40px; margin-bottom: 60px; }
+.footer-logo { font-size: 1.5rem; font-weight: 700; color: var(--text-pure); margin-bottom: 16px; }
+.footer-bottom { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding-top: 24px; border-top: 1px solid var(--border-subtle); }
+.site-toast {
+  position: fixed; bottom: 24px; right: 24px; z-index: 999; max-width: 420px;
+  background: var(--surface-card); color: var(--text-primary); border: 1px solid var(--accent-lime);
+  border-radius: 8px; padding: 16px 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  font-size: 0.9rem; line-height: 1.5; opacity: 0; transform: translateY(16px);
+  pointer-events: none; transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.site-toast.visible { opacity: 1; transform: translateY(0); pointer-events: auto; }
+
+@media (max-width: 768px) {
+  .hero-grid { grid-template-columns: 1fr; }
+  .canvas-wrapper { height: 240px; }
+  .modes-grid { grid-template-columns: 1fr; }
+  .bento-grid { grid-template-columns: 1fr; }
+  .col-span-7, .col-span-5, .col-span-6 { grid-column: span 1; }
+  .nav-links { display: none; }
+  .pricing-grid { grid-template-columns: 1fr; }
+  .footer-top { grid-template-columns: 1fr; }
+  .footer-bottom { flex-direction: column; gap: 16px; text-align: center; }
+  .calc-result { flex-direction: column; gap: 16px; }
+}
+  </style>
+</head>
+<body>
+  <!-- NAVBAR -->
+  <nav class="navbar" id="navbar">
+    <div class="nav-logo">
+      <span class="logo-hex">⬡</span>
+      <span class="logo-name">AutoTracker</span>
+      <span class="logo-ver tag-mono">v1.0</span>
+    </div>
+    <ul class="nav-links">
+      <li><a href="#video-showcase" data-i18n="nav_video">Відеоогляд</a></li>
+      <li><a href="#modes" data-i18n="nav_modes">Режими</a></li>
+      <li><a href="#features" data-i18n="nav_features">Можливості</a></li>
+      <li><a href="#pricing" data-i18n="nav_pricing">Тарифи</a></li>
+      <li><a href="#faq" data-i18n="nav_faq">FAQ</a></li>
+    </ul>
+    <div class="nav-actions">
+      <span class="rec-badge tag-mono">● REC</span>
+      <button id="langToggle"><span id="langLabel">UA</span></button>
+      <button id="themeToggle"><span id="themeIcon">🌙</span></button>
+      <a href="#pricing" class="btn-lime" data-i18n="nav_buy">Купити</a>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section id="hero">
+    <div class="container hero-grid">
+      <div class="hero-left">
+        <span class="hero-badge tag-mono" data-i18n="hero_badge">PREMIERE PRO PLUGIN</span>
+        <h1 class="hero-title" data-i18n="hero_title">Автоматичний трекінг об'єктів прямо в <span class="text-lime">Adobe Premiere Pro</span></h1>
+        <p class="hero-sub" data-i18n="hero_subtitle">Прив'язуйте текст, плашки, графіку чи стікери до рухомих об'єктів або фіксуйте ціль у центрі кадру в кілька кліків.</p>
+        <div class="hero-cta">
+          <a href="#pricing" class="btn-lime" data-i18n="hero_cta_buy">Обрати ліцензію</a>
+          <a href="#video-showcase" class="btn-ghost" data-i18n="hero_cta_demo">Дивитися відео</a>
+        </div>
+        <div class="hero-metrics">
+          <div class="metric-pill">
+            <span class="metric-val" data-i18n="metric1_val">2 режими</span>
+            <span class="metric-lbl" data-i18n="metric1_lbl">Прив'язка та Lock-on</span>
+          </div>
+          <div class="metric-pill">
+            <span class="metric-val" data-i18n="metric2_val">Точка і Зона</span>
+            <span class="metric-lbl" data-i18n="metric2_lbl">Вибір у 1 клік або рамкою</span>
+          </div>
+          <div class="metric-pill">
+            <span class="metric-val" data-i18n="metric3_val">Нативні ключі</span>
+            <span class="metric-lbl" data-i18n="metric3_lbl">Готові ключі Motion</span>
+          </div>
+        </div>
+      </div>
+      <div class="hero-right">
+        <div class="canvas-wrapper hud-frame">
+          <canvas id="trackerCanvas"></canvas>
+          <div class="canvas-hud-tl tag-mono">TRACK <span class="text-lime">●</span></div>
+          <div class="canvas-hud-tr tag-mono">60.00 FPS</div>
+          <div class="canvas-hud-bl tag-mono" id="hudCoords">X: 000.0 Y: 000.0</div>
+          <div class="canvas-hud-br tag-mono" id="hudStatus">SCANNING</div>
+        </div>
+        <div class="mode-tabs">
+          <button class="mode-tab active" data-mode="attach" data-i18n="demo_mode_attach">Прив'язка шару</button>
+          <button class="mode-tab" data-mode="lockon" data-i18n="demo_mode_lockon">Центрувати на точці</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- VIDEO SHOWCASE -->
+  <section id="video-showcase">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag tag-mono" data-i18n="vid_tag">ВІДЕООГЛЯД</span>
+        <h2 data-i18n="vid_title">Подивіться AutoTracker у дії</h2>
+        <p data-i18n="vid_subtitle">Увесь процес — від завантаження кліпу та вибору точки до готових ключових кадрів на таймлайні — займає лічені секунди.</p>
+      </div>
+      <div class="custom-player hud-frame" id="mainPlayerWrap">
+        <video id="mainVideo" src="videos/main_overview.mp4" preload="metadata" playsinline class="video-element"></video>
+        <div class="video-placeholder" id="mainPlaceholder">
+          <div class="placeholder-icon">▶</div>
+          <div class="placeholder-title tag-mono" data-i18n="vid_main_placeholder">DEMO VIDEO</div>
+          <div class="placeholder-hint">landing/videos/main_overview.mp4</div>
+        </div>
+        <div class="player-overlay" id="playerOverlay">
+          <button class="player-play-btn" id="playerPlayBtn">▶</button>
+          <div class="player-controls">
+            <div class="player-progress-wrap" id="playerProgress">
+              <div class="player-progress-fill" id="playerFill"></div>
+            </div>
+            <span class="tag-mono player-time" id="playerTime">0:00</span>
+            <div class="player-speeds">
+              <button class="spd" data-speed="0.5">0.5×</button>
+              <button class="spd active" data-speed="1">1×</button>
+              <button class="spd" data-speed="1.5">1.5×</button>
+              <button class="spd" data-speed="2">2×</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MODES -->
+  <section id="modes">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag tag-mono" data-i18n="modes_tag">ДВА РЕЖИМИ</span>
+        <h2 data-i18n="modes_title">Один плагін для найчастіших задач монтажу</h2>
+      </div>
+      <div class="modes-grid">
+        <!-- Mode 1: Attach -->
+        <div class="mode-card spotlight-card tilt-card">
+          <div class="mode-card-header">
+            <span class="mode-num tag-mono">01</span>
+            <h3 data-i18n="mode1_title">Прив'язка шару</h3>
+          </div>
+          <div class="video-frame mode-video">
+            <video class="video-element" src="videos/mode_attach.mp4" loop muted preload="metadata" playsinline></video>
+            <div class="video-placeholder">
+              <div class="video-placeholder-title" data-i18n="vid_mode1_placeholder">Відео: Прив'язка тексту</div>
+              <div class="video-placeholder-hint">landing/videos/mode_attach.mp4</div>
+            </div>
+          </div>
+          <p data-i18n="mode1_desc">Прикріплюйте текст, плашки з іменами, стрілки, цінники, стікери або ефекти розмиття до будь-якого рухомого об'єкта у відео.</p>
+          <ul class="mode-features">
+            <li data-i18n="mode1_f1">Зберігає початковий відступ</li>
+            <li data-i18n="mode1_f2">Працює з титрами та графікою</li>
+            <li data-i18n="mode1_f3">Вибір об'єкта 1 кліком</li>
+          </ul>
+        </div>
+        <!-- Mode 2: Lock-on -->
+        <div class="mode-card spotlight-card tilt-card">
+          <div class="mode-card-header">
+            <span class="mode-num tag-mono">02</span>
+            <h3 data-i18n="mode2_title">Центрувати на точці</h3>
+          </div>
+          <div class="video-frame mode-video">
+            <video class="video-element" src="videos/mode_lockon.mp4" loop muted preload="metadata" playsinline></video>
+            <div class="video-placeholder">
+              <div class="video-placeholder-title" data-i18n="vid_mode2_placeholder">Відео: Lock-on</div>
+              <div class="video-placeholder-hint">landing/videos/mode_lockon.mp4</div>
+            </div>
+          </div>
+          <p data-i18n="mode2_desc">Динамічний ефект стабілізації, де обраний об'єкт або обличчя постійно утримується по центру екрана.</p>
+          <ul class="mode-features">
+            <li data-i18n="mode2_f1">Окремий шар не потрібен</li>
+            <li data-i18n="mode2_f2">Автоматичне масштабування</li>
+            <li data-i18n="mode2_f3">Ідеально для Reels</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES (Bento Grid) -->
+  <section id="features">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag tag-mono" data-i18n="feat_tag">МОЖЛИВОСТІ</span>
+        <h2 data-i18n="feat_title">Продуманий до дрібниць робочий процес</h2>
+      </div>
+      <div class="bento-grid">
+        <div class="bento-card col-span-7">
+          <h3 data-i18n="f5_title">Згладжування та вибір кроку ключів</h3>
+          <p data-i18n="f5_desc">Опція згладжування робить рух плавним і прибирає тремтіння камери.</p>
+          <div class="timeline-widget">
+            <div class="tl-header">
+              <span class="tag-mono">MOTION • POSITION</span>
+              <span class="tag-mono" id="tlTimecode">[00:00:01:12]</span>
+            </div>
+            <div class="tl-ruler" id="tlRuler">
+              <div class="tl-playhead" id="tlPlayhead"></div>
+              <div class="tl-tick" style="left:12%"></div>
+              <div class="tl-tick" style="left:38%"></div>
+              <div class="tl-tick" style="left:63%"></div>
+              <div class="tl-tick" style="left:88%"></div>
+            </div>
+            <div class="tl-track-row">
+              <span class="tl-track-label tag-mono">Position X/Y</span>
+              <div class="tl-track">
+                <div class="kf-diamond" style="left:12%"></div>
+                <div class="kf-diamond" style="left:38%"></div>
+                <div class="kf-diamond" style="left:63%"></div>
+                <div class="kf-diamond" style="left:88%"></div>
+              </div>
+            </div>
+            <div class="tl-preview-bar">
+              <div class="tl-dot" id="tlDot"></div>
+            </div>
+          </div>
+        </div>
+        <div class="bento-card col-span-5">
+          <h3 data-i18n="f1_title">Режими «Точка» та «Зона»</h3>
+          <p data-i18n="f1_desc">Клікніть у потрібну деталь для швидкого точкового трекінгу або намалюйте рамку.</p>
+        </div>
+        <div class="bento-card col-span-5">
+          <h3 data-i18n="f3_title">Силуетний режим</h3>
+          <p data-i18n="f3_desc">Спеціальний режим «Силует» дозволяє впевнено трекувати однотонні об'єкти.</p>
+        </div>
+        <div class="bento-card col-span-7">
+          <h3 data-i18n="f4_title">Трекінг від курсора (CTI)</h3>
+          <p data-i18n="f4_desc">Починайте трекінг саме з тієї секунди, де стоїть курсор на таймлайні.</p>
+        </div>
+        <div class="bento-card col-span-6">
+          <h3 data-i18n="f2_title">Зручне прев'ю</h3>
+          <p data-i18n="f2_desc">Наближайте кадр коліщатком миші або кнопками для вибору деталей.</p>
+        </div>
+        <div class="bento-card col-span-6">
+          <h3 data-i18n="f6_title">Темна / Світла теми</h3>
+          <p data-i18n="f6_desc">Сучасний чистий інтерфейс із миттєвим перемиканням.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- COMPARISON + TIME CALC -->
+  <section id="comparison">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag tag-mono" data-i18n="comp_tag">ЕКОНОМІЯ ЧАСУ</span>
+        <h2 data-i18n="comp_title">Більше ніякої ручної рутини з ключами</h2>
+      </div>
+      <div class="time-calc spotlight-card">
+        <div class="calc-header">
+          <span class="tag-mono">КЛІПІВ НА ТИЖДЕНЬ: <span id="clipsVal" class="text-lime">10</span></span>
+        </div>
+        <input type="range" id="clipsSlider" min="1" max="50" value="10" class="calc-slider">
+        <div class="calc-result">
+          <div class="calc-col">
+            <div class="tag-mono calc-label">РУЧНИЙ ТРЕКІНГ</div>
+            <div class="calc-time" id="manualTime">250 хв</div>
+            <div class="calc-sub" id="manualHours">≈ 4.2 год / тиж</div>
+          </div>
+          <div class="calc-vs tag-mono" style="font-size: 2rem; color: var(--border-subtle);">VS</div>
+          <div class="calc-col calc-col-auto">
+            <div class="tag-mono calc-label text-cyan">AUTOTRACKER</div>
+            <div class="calc-time text-lime" id="autoTime">5 хв</div>
+            <div class="calc-sub" id="autoSave">98% економія</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRICING -->
+  <section id="pricing">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag tag-mono" data-i18n="price_tag">ТАРИФИ</span>
+        <h2 data-i18n="price_title">Один повний функціонал — три формати доступу</h2>
+      </div>
+      <div class="pricing-unified-box">
+        <h4 data-i18n="pu_title">Що входить у AutoTracker Pro:</h4>
+        <span class="tag-mono" data-i18n="pu_badge" style="color:var(--accent-lime); margin-bottom:16px; display:inline-block;">100% ПОВНА ВЕРСІЯ БЕЗ ОБМЕЖЕНЬ</span>
+        <ul style="list-style: none; text-align: left; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; max-width: 800px; margin: 0 auto;">
+          <li data-i18n="pu_f1">Прив'язка шару</li>
+          <li data-i18n="pu_f2">Центрування (Lock-on Center)</li>
+          <li data-i18n="pu_f3">Точка, Зона та Силует</li>
+          <li data-i18n="pu_f4">AI + WebGPU прискорення</li>
+          <li data-i18n="pu_f5">Нативні ключі Motion</li>
+          <li data-i18n="pu_f6">Автооновлення в 1 клік</li>
+        </ul>
+      </div>
+      <div class="pricing-grid">
+        <!-- Plan 1 -->
+        <div class="pricing-card">
+          <div class="pricing-card-header">
+            <div class="pricing-cat tag-mono" data-i18n="plan1_cat">⚡ Під завдання</div>
+            <h3 class="pricing-name" data-i18n="plan1_name">Швидкий Старт</h3>
+            <p class="pricing-desc" data-i18n="plan1_desc">Ідеально, щоб закрити поточний проєкт.</p>
+          </div>
+          <div class="pricing-price-box">
+            <span class="pricing-price">$5</span>
+            <span class="pricing-period" data-i18n="plan1_period">/ місяць</span>
+            <div class="pricing-save" data-i18n="plan1_save">Гнучкий старт • Скасування в 1 клік</div>
+          </div>
+          <ul class="pricing-features">
+            <li data-i18n="plan1_p1">Мінімальний поріг входу</li>
+            <li data-i18n="plan1_p2">Окупається вже за 10 хв</li>
+            <li data-i18n="plan1_p3">Без зобов'язань</li>
+          </ul>
+          <a href="#" class="btn-ghost buy-link" data-plan="monthly" data-i18n="plan1_btn">Почати за $5 / міс</a>
+        </div>
+        <!-- Plan 2 -->
+        <div class="pricing-card popular">
+          <span class="plan2_ribbon tag-mono" data-i18n="plan2_ribbon">[BEST VALUE]</span>
+          <div class="pricing-card-header">
+            <div class="pricing-cat tag-mono" data-i18n="plan2_cat">👑 Без підписок</div>
+            <h3 class="pricing-name" data-i18n="plan2_name">Назавжди</h3>
+            <p class="pricing-desc" data-i18n="plan2_desc">Свобода від щомісячних списань.</p>
+          </div>
+          <div class="pricing-price-box">
+            <span class="pricing-price">$39</span>
+            <span class="pricing-period" data-i18n="plan2_period">одноразово</span>
+            <div class="pricing-save" data-i18n="plan2_save">Жодних регулярних платежів</div>
+          </div>
+          <ul class="pricing-features">
+            <li data-i18n="plan2_p1">Платите лише один раз</li>
+            <li data-i18n="plan2_p2">Вигідніше за підписку</li>
+            <li data-i18n="plan2_p3">Усі майбутні оновлення</li>
+          </ul>
+          <a href="#" class="btn-lime buy-link" data-plan="lifetime" data-i18n="plan2_btn">Купити назавжди за $39</a>
+        </div>
+        <!-- Plan 3 -->
+        <div class="pricing-card">
+          <div class="pricing-card-header">
+            <div class="pricing-cat tag-mono" data-i18n="plan3_cat">🔥 Економія 52%</div>
+            <h3 class="pricing-name" data-i18n="plan3_name">Річний Профі</h3>
+            <p class="pricing-desc" data-i18n="plan3_desc">Для креаторів із регулярним потоком відео.</p>
+          </div>
+          <div class="pricing-price-box">
+            <span class="pricing-price">$29</span>
+            <span class="pricing-period" data-i18n="plan3_period">/ рік</span>
+            <div class="pricing-save" data-i18n="plan3_save">Економія $31 на рік</div>
+          </div>
+          <ul class="pricing-features">
+            <li data-i18n="plan3_p1">Вдвічі вигідніше</li>
+            <li data-i18n="plan3_p2">Цілий рік спокійної роботи</li>
+            <li data-i18n="plan3_p3">Повний доступ до оновлень</li>
+          </ul>
+          <a href="#" class="btn-ghost buy-link" data-plan="annual" data-i18n="plan3_btn">Обрати Річний за $29</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section id="faq">
+    <div class="container">
+      <div class="section-header">
+        <span class="section-tag tag-mono" data-i18n="faq_tag">ПИТАННЯ ТА ВІДПОВІДІ</span>
+        <h2 data-i18n="faq_title">Часті запитання (FAQ)</h2>
+      </div>
+      <div class="faq-list">
+        <div class="faq-item">
+          <button class="faq-question" data-i18n="faq1_q">Які версії Adobe Premiere Pro підтримуються?</button>
+          <div class="faq-answer"><p data-i18n="faq1_a">AutoTracker працює в Adobe Premiere Pro версій 2020 і новіших.</p></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-question" data-i18n="faq2_q">Чи відкриється проєкт у іншого монтажера?</button>
+          <div class="faq-answer"><p data-i18n="faq2_a">Так, плагін створює стандартні нативні ключові кадри ефекту Motion.</p></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-question" data-i18n="faq3_q">Чи потрібен постійний інтернет?</button>
+          <div class="faq-answer"><p data-i18n="faq3_a">Ні, уся обробка локально.</p></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-question" data-i18n="faq4_q">Чи можна почати трекінг не з початку кліпу?</button>
+          <div class="faq-answer"><p data-i18n="faq4_a">Так, функція трекінгу від курсора.</p></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-question" data-i18n="faq5_q">Як встановити?</button>
+          <div class="faq-answer"><p data-i18n="faq5_a">Інсталятор install.bat у комплекті.</p></div>
+        </div>
+        <div class="faq-item">
+          <button class="faq-question" data-i18n="faq6_q">Чи можна перенести ліцензію?</button>
+          <div class="faq-answer"><p data-i18n="faq6_a">Так, через меню плагіна.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="container footer-top">
+      <div class="footer-brand">
+        <div class="footer-logo">⬡ AutoTracker</div>
+        <p class="footer-about" data-i18n="footer_about">Зручний плагін автоматичного трекінгу.</p>
+      </div>
+      <div class="footer-sysreq">
+        <h4 data-i18n="footer_sysreq_title" style="margin-bottom: 16px;">Системні вимоги</h4>
+        <ul style="list-style: none; font-size: 0.9rem; color: var(--text-muted); line-height: 2;">
+          <li data-i18n="footer_sys_1">Premiere Pro 2020 (v14.0) – 2026+</li>
+          <li data-i18n="footer_sys_2">Windows 10 / 11 (64-bit)</li>
+          <li data-i18n="footer_sys_3">8 GB RAM (рекомендовано 16 GB)</li>
+          <li data-i18n="footer_sys_4">Усі компоненти вже вбудовано</li>
+        </ul>
+      </div>
+      <div class="footer-nav">
+        <h4 data-i18n="footer_docs_title" style="margin-bottom: 16px;">Навігація</h4>
+        <ul style="list-style: none; font-size: 0.9rem; color: var(--text-muted); line-height: 2;">
+          <li><a href="#video-showcase" data-i18n="footer_doc_1">Відеоогляд</a></li>
+          <li><a href="#modes" data-i18n="footer_doc_2">Режими роботи</a></li>
+          <li><a href="#features" data-i18n="footer_doc_3">Можливості та зручність</a></li>
+          <li><a href="#faq" data-i18n="footer_doc_4">Часті запитання (FAQ)</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="container footer-bottom">
+      <span class="tag-mono footer-telemetry">PREMIERE PRO 2020–2026+ • WINDOWS 10/11 • LOCAL PROCESSING ONLY</span>
+      <span class="footer-copy" data-i18n="footer_copy">© 2026 AutoTracker Plugin. Усі права захищено.</span>
+    </div>
+  </footer>
+
+  <div id="siteToast" class="site-toast"></div>
+
+  <!-- SCRIPTS -->
+  <script>
+    const CHECKOUT_URL = "https://anybecent.gumroad.com/l/autotracker";
+
+    const I18N = {
+      uk: {
+        nav_video: "Відеоогляд",
+        nav_modes: "Режими",
+        nav_features: "Можливості",
+        nav_pricing: "Тарифи",
+        nav_faq: "FAQ",
+        nav_buy: "Купити",
+        hero_badge: "PREMIERE PRO PLUGIN",
+        hero_title: "Автоматичний трекінг об'єктів прямо в <span class='text-lime'>Adobe Premiere Pro</span>",
+        hero_subtitle: "Прив'язуйте текст, плашки, графіку чи стікери до рухомих об'єктів або фіксуйте ціль у центрі кадру в кілька кліків.",
+        hero_cta_buy: "Обрати ліцензію",
+        hero_cta_demo: "Дивитися відео",
+        metric1_val: "2 режими",
+        metric1_lbl: "Прив'язка та Lock-on",
+        metric2_val: "Точка і Зона",
+        metric2_lbl: "Вибір у 1 клік або рамкою",
+        metric3_val: "Нативні ключі",
+        metric3_lbl: "Готові ключі Motion",
+        demo_mode_attach: "Прив'язка шару",
+        demo_mode_lockon: "Центрувати на точці",
+        vid_tag: "ВІДЕООГЛЯД",
+        vid_title: "Подивіться AutoTracker у дії",
+        vid_subtitle: "Увесь процес — від завантаження кліпу та вибору точки до готових ключових кадрів на таймлайні — займає лічені секунди.",
+        vid_main_placeholder: "DEMO VIDEO",
+        modes_tag: "ДВА РЕЖИМИ",
+        modes_title: "Один плагін для найчастіших задач монтажу",
+        mode1_title: "Прив'язка шару",
+        mode1_desc: "Прикріплюйте текст, плашки з іменами, стрілки, цінники, стікери або ефекти розмиття до будь-якого рухомого об'єкта у відео.",
+        vid_mode1_placeholder: "Відео: Прив'язка тексту",
+        mode1_f1: "Зберігає початковий відступ шару",
+        mode1_f2: "Працює з титрами та графікою",
+        mode1_f3: "Вибір об'єкта одним кліком",
+        mode2_title: "Центрувати на точці",
+        mode2_desc: "Динамічний ефект стабілізації, де обраний об'єкт або обличчя постійно утримується по центру екрана.",
+        vid_mode2_placeholder: "Відео: Lock-on",
+        mode2_f1: "Окремий шар не потрібен",
+        mode2_f2: "Автоматичне масштабування кадру",
+        mode2_f3: "Чудово підходить для Reels",
+        feat_tag: "МОЖЛИВОСТІ",
+        feat_title: "Продуманий до дрібниць робочий процес",
+        f5_title: "Згладжування та вибір кроку ключів",
+        f5_desc: "Опція згладжування робить рух плавним і прибирає тремтіння камери.",
+        f1_title: "Режими «Точка» та «Зона»",
+        f1_desc: "Клікніть у потрібну деталь для швидкого точкового трекінгу або намалюйте рамку.",
+        f3_title: "Силуетний режим",
+        f3_desc: "Спеціальний режим «Силует» дозволяє впевнено трекувати однотонні об'єкти.",
+        f4_title: "Трекінг від курсора (CTI)",
+        f4_desc: "Починайте трекінг саме з тієї секунди, де стоїть курсор на таймлайні.",
+        f2_title: "Зручне прев'ю",
+        f2_desc: "Наближайте кадр коліщатком миші або кнопками для вибору деталей.",
+        f6_title: "Темна / Світла теми",
+        f6_desc: "Сучасний чистий інтерфейс із миттєвим перемиканням.",
+        comp_tag: "ЕКОНОМІЯ ЧАСУ",
+        comp_title: "Більше ніякої ручної рутини з ключами",
+        price_tag: "ТАРИФИ",
+        price_title: "Один повний функціонал — три формати доступу",
+        pu_title: "Що входить у AutoTracker Pro:",
+        pu_badge: "100% ПОВНА ВЕРСІЯ БЕЗ ОБМЕЖЕНЬ",
+        pu_f1: "Прив'язка шару (Attach Layer)",
+        pu_f2: "Центрування (Lock-on Center)",
+        pu_f3: "Точка, Зона та Силует",
+        pu_f4: "AI + WebGPU прискорення",
+        pu_f5: "Нативні ключі Motion",
+        pu_f6: "Автооновлення в 1 клік",
+        plan1_cat: "⚡ Під завдання",
+        plan1_name: "Швидкий Старт",
+        plan1_desc: "Ідеально, щоб закрити поточний проєкт.",
+        plan1_period: "/ місяць",
+        plan1_save: "Гнучкий старт • Скасування в 1 клік",
+        plan1_p1: "Мінімальний поріг входу",
+        plan1_p2: "Окупається вже за 10 хв",
+        plan1_p3: "Без зобов'язань",
+        plan1_btn: "Почати за $5 / міс",
+        plan2_ribbon: "[BEST VALUE]",
+        plan2_cat: "👑 Без підписок",
+        plan2_name: "Назавжди",
+        plan2_desc: "Свобода від щомісячних списань.",
+        plan2_period: "одноразово",
+        plan2_save: "Жодних регулярних платежів",
+        plan2_p1: "Платите лише один раз",
+        plan2_p2: "Вигідніше за підписку",
+        plan2_p3: "Усі майбутні оновлення",
+        plan2_btn: "Купити назавжди за $39",
+        plan3_cat: "🔥 Економія 52%",
+        plan3_name: "Річний Профі",
+        plan3_desc: "Для креаторів із регулярним потоком відео.",
+        plan3_period: "/ рік",
+        plan3_save: "Економія $31 на рік",
+        plan3_p1: "Вдвічі вигідніше",
+        plan3_p2: "Цілий рік спокійної роботи",
+        plan3_p3: "Повний доступ до оновлень",
+        plan3_btn: "Обрати Річний за $29",
+        faq_tag: "ПИТАННЯ ТА ВІДПОВІДІ",
+        faq_title: "Часті запитання (FAQ)",
+        faq1_q: "Які версії Adobe Premiere Pro підтримуються?",
+        faq1_a: "AutoTracker працює в Adobe Premiere Pro версій 2020 і новіших.",
+        faq2_q: "Чи відкриється проєкт у іншого монтажера?",
+        faq2_a: "Так, плагін створює стандартні нативні ключові кадри ефекту Motion.",
+        faq3_q: "Чи потрібен постійний інтернет?",
+        faq3_a: "Ні, уся обробка локально.",
+        faq4_q: "Чи можна почати трекінг не з початку кліпу?",
+        faq4_a: "Так, функція трекінгу від курсора.",
+        faq5_q: "Як встановити?",
+        faq5_a: "Інсталятор install.bat у комплекті.",
+        faq6_q: "Чи можна перенести ліцензію?",
+        faq6_a: "Так, через меню плагіна.",
+        footer_about: "Зручний плагін автоматичного трекінгу.",
+        footer_sysreq_title: "Системні вимоги",
+        footer_sys_1: "Premiere Pro 2020 (v14.0) – 2026+",
+        footer_sys_2: "Windows 10 / 11 (64-bit)",
+        footer_sys_3: "8 GB RAM (рекомендовано 16 GB)",
+        footer_sys_4: "Усі компоненти вже вбудовано",
+        footer_docs_title: "Навігація",
+        footer_doc_1: "Відеоогляд",
+        footer_doc_2: "Режими роботи",
+        footer_doc_3: "Можливості та зручність",
+        footer_doc_4: "Часті запитання (FAQ)",
+        footer_copy: "© 2026 AutoTracker Plugin. Усі права захищено."
+      },
+      en: {
+        nav_video: "Video Demo",
+        nav_modes: "Modes",
+        nav_features: "Features",
+        nav_pricing: "Pricing",
+        nav_faq: "FAQ",
+        nav_buy: "Buy Now",
+        hero_badge: "PREMIERE PRO PLUGIN",
+        hero_title: "Automatic Object Tracking Right Inside <span class='text-lime'>Adobe Premiere Pro</span>",
+        hero_subtitle: "Pin text, callouts, graphics, or stickers to moving objects, or lock your subject in the center of the frame.",
+        hero_cta_buy: "Choose License",
+        hero_cta_demo: "Watch Video",
+        metric1_val: "2 Modes",
+        metric1_lbl: "Attach & Lock-on",
+        metric2_val: "Point & Area",
+        metric2_lbl: "1-click or bounding box",
+        metric3_val: "Native Keys",
+        metric3_lbl: "Motion keyframes",
+        demo_mode_attach: "Attach Layer",
+        demo_mode_lockon: "Center on Point",
+        vid_tag: "VIDEO OVERVIEW",
+        vid_title: "See AutoTracker in Action",
+        vid_subtitle: "The entire workflow takes just seconds.",
+        vid_main_placeholder: "DEMO VIDEO",
+        modes_tag: "TWO MODES",
+        modes_title: "One Plugin for Your Essential Tasks",
+        mode1_title: "Attach Layer",
+        mode1_desc: "Pin text titles, lower thirds, arrows, or stickers to any moving object.",
+        vid_mode1_placeholder: "Video: Attach Text",
+        mode1_f1: "Preserves the initial position",
+        mode1_f2: "Works with titles and graphics",
+        mode1_f3: "1-click selection",
+        mode2_title: "Center on Point",
+        mode2_desc: "Dynamic stabilization effect where your selected object stays locked in the center.",
+        vid_mode2_placeholder: "Video: Lock-on",
+        mode2_f1: "No separate layer required",
+        mode2_f2: "Automatic frame scaling",
+        mode2_f3: "Ideal for Reels",
+        feat_tag: "FEATURES",
+        feat_title: "A Workflow Designed for Comfort",
+        f5_title: "Smoothing & Keyframe Step Control",
+        f5_desc: "Built-in smoothing removes camera shake.",
+        f1_title: "Point and Area Selection",
+        f1_desc: "Click for quick point tracking or draw a box.",
+        f3_title: "Silhouette Mode",
+        f3_desc: "Reliably tracks uniform objects without fine texture.",
+        f4_title: "Track from Playhead (CTI)",
+        f4_desc: "Start tracking from the exact second.",
+        f2_title: "Interactive Preview",
+        f2_desc: "Zoom in to pick small details.",
+        f6_title: "Dark / Light Themes",
+        f6_desc: "Clean modern interface with instant switching.",
+        comp_tag: "TIME SAVER",
+        comp_title: "Say Goodbye to Manual Keyframing",
+        price_tag: "PRICING",
+        price_title: "One Full Feature Set — Three Ways to Access",
+        pu_title: "Everything Included in AutoTracker Pro:",
+        pu_badge: "100% FULL UNRESTRICTED VERSION",
+        pu_f1: "Attach Layer Mode",
+        pu_f2: "Lock-on Center Mode",
+        pu_f3: "Point, Area & Silhouette",
+        pu_f4: "AI + WebGPU Acceleration",
+        pu_f5: "Native Motion Keyframes",
+        pu_f6: "1-Click Auto-Updates",
+        plan1_cat: "⚡ Project Sprint",
+        plan1_name: "Quick Start",
+        plan1_desc: "Ideal for finishing an urgent project.",
+        plan1_period: "/ month",
+        plan1_save: "Cancel in 1 click anytime",
+        plan1_p1: "Lowest entry cost",
+        plan1_p2: "Pays for itself in 10 mins",
+        plan1_p3: "Zero long-term commitment",
+        plan1_btn: "Start for $5 / mo",
+        plan2_ribbon: "[BEST VALUE]",
+        plan2_cat: "👑 Zero Subscriptions",
+        plan2_name: "Forever",
+        plan2_desc: "Freedom from recurring bills.",
+        plan2_period: "one-time",
+        plan2_save: "No Recurring Fees",
+        plan2_p1: "Pay only once",
+        plan2_p2: "Cheaper than subscription",
+        plan2_p3: "All future v1.x updates",
+        plan2_btn: "Buy Forever for $39",
+        plan3_cat: "🔥 Save 52%",
+        plan3_name: "Annual Pro",
+        plan3_desc: "For creators with steady video production.",
+        plan3_period: "/ year",
+        plan3_save: "Save $31 per year",
+        plan3_p1: "Over 50% cheaper",
+        plan3_p2: "A full year of work",
+        plan3_p3: "Full access to updates",
+        plan3_btn: "Choose Annual for $29",
+        faq_tag: "Q&A",
+        faq_title: "Frequently Asked Questions (FAQ)",
+        faq1_q: "Which versions of Premiere Pro are supported?",
+        faq1_a: "2020 and newer.",
+        faq2_q: "Will my project open on another PC?",
+        faq2_a: "Yes, standard native keyframes.",
+        faq3_q: "Is internet required?",
+        faq3_a: "No, all local.",
+        faq4_q: "Can I track from a specific second?",
+        faq4_a: "Yes, track from CTI.",
+        faq5_q: "How to install?",
+        faq5_a: "Just run install.bat.",
+        faq6_q: "Transfer license?",
+        faq6_a: "Yes, deactivate and use again.",
+        footer_about: "Easy-to-use tracking plugin.",
+        footer_sysreq_title: "System Requirements",
+        footer_sys_1: "Premiere Pro 2020 (v14.0) – 2026+",
+        footer_sys_2: "Windows 10 / 11 (64-bit)",
+        footer_sys_3: "8 GB RAM (16 GB recommended)",
+        footer_sys_4: "All components included",
+        footer_docs_title: "Navigation",
+        footer_doc_1: "Video Overview",
+        footer_doc_2: "Workflow Modes",
+        footer_doc_3: "Features",
+        footer_doc_4: "FAQ",
+        footer_copy: "© 2026 AutoTracker Plugin. All rights reserved."
+      }
+    };
+
+    const rootHtml = document.documentElement;
+    const siteToast = document.getElementById('siteToast');
+    let toastTimer = null;
+    let currentLang = 'uk';
+
+    function showToast(html) {
+      if(!siteToast) return;
+      siteToast.innerHTML = html;
+      siteToast.classList.add('visible');
+      if(toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => siteToast.classList.remove('visible'), 5000);
+    }
+
+    // 1. Language Toggle
+    function setLanguage(lang) {
+      currentLang = lang;
+      rootHtml.setAttribute('lang', lang);
+      document.getElementById('langLabel').textContent = lang === 'uk' ? 'UA' : 'EN';
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if(I18N[lang] && I18N[lang][key]) {
+          el.innerHTML = I18N[lang][key];
+        }
+      });
+      localStorage.setItem('autotracker_lang', lang);
+    }
+    const savedLang = localStorage.getItem('autotracker_lang') || 'uk';
+    setLanguage(savedLang);
+
+    document.getElementById('langToggle').addEventListener('click', () => {
+      setLanguage(currentLang === 'uk' ? 'en' : 'uk');
+    });
+
+    // 2. Theme Toggle
+    function applyTheme(theme) {
+      rootHtml.setAttribute('data-theme', theme);
+      document.getElementById('themeIcon').textContent = theme === 'dark' ? '🌙' : '☀️';
+      localStorage.setItem('autotracker_theme', theme);
+    }
+    const savedTheme = localStorage.getItem('autotracker_theme') || 'dark';
+    applyTheme(savedTheme);
+
+    document.getElementById('themeToggle').addEventListener('click', () => {
+      const isDark = rootHtml.getAttribute('data-theme') === 'dark';
+      applyTheme(isDark ? 'light' : 'dark');
+    });
+
+    // 3. Navbar scroll
+    window.addEventListener('scroll', () => {
+      const nav = document.getElementById('navbar');
+      if(window.scrollY > 20) nav.classList.add('scrolled');
+      else nav.classList.remove('scrolled');
+    });
+
+    // 4. Buy Links
+    document.querySelectorAll(".buy-link").forEach((link) => {
+      link.setAttribute("href", CHECKOUT_URL);
+      link.setAttribute("target", "_blank");
+      link.setAttribute("rel", "noopener noreferrer");
+    });
+
+    // 5. Video Slots
+    document.querySelectorAll(".video-element").forEach((video) => {
+      const frame = video.closest(".video-frame") || video.closest(".custom-player");
+      const placeholder = frame ? frame.querySelector(".video-placeholder") : null;
+      if (!frame || !placeholder) return;
+
+      function markLoaded() {
+        if (video.readyState >= 1 && video.videoWidth > 0) frame.classList.add("has-video");
+      }
+      video.addEventListener("loadedmetadata", markLoaded);
+      video.addEventListener("canplay", markLoaded);
+      video.addEventListener("error", () => frame.classList.remove("has-video"));
+
+      placeholder.addEventListener("click", () => {
+        const input = document.createElement("input");
+        input.type = "file"; input.accept = "video/mp4";
+        input.onchange = () => {
+          if (input.files[0]) {
+            video.src = URL.createObjectURL(input.files[0]);
+            frame.classList.add("has-video");
+            video.play().catch(()=>{});
+          }
+        };
+        input.click();
+      });
+    });
+
+    // 6. FAQ Accordion
+    document.querySelectorAll(".faq-question").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const item = btn.parentElement;
+        const isOpen = item.classList.contains("open");
+        document.querySelectorAll(".faq-item").forEach(other => other.classList.remove("open"));
+        if (!isOpen) item.classList.add("open");
+      });
+    });
+
+    // JS MODULE 1: SpotlightCards
+    document.querySelectorAll('.spotlight-card').forEach(card => {
+      card.addEventListener('mousemove', e => {
+        const rect = card.getBoundingClientRect();
+        card.style.setProperty('--mouse-x', `${e.clientX - rect.left}px`);
+        card.style.setProperty('--mouse-y', `${e.clientY - rect.top}px`);
+      });
+      card.addEventListener('mouseleave', () => {
+        card.style.setProperty('--mouse-x', '-999px');
+        card.style.setProperty('--mouse-y', '-999px');
+      });
+    });
+
+    // JS MODULE 2: Tilt3D
+    function attachTilt(el, max = 6) {
+      el.addEventListener('mousemove', e => {
+        const r = el.getBoundingClientRect();
+        const rx = ((e.clientY - r.top) / r.height - 0.5) * -max * 2;
+        const ry = ((e.clientX - r.left) / r.width - 0.5) * max * 2;
+        el.style.transform = `perspective(1000px) rotateX(${rx.toFixed(2)}deg) rotateY(${ry.toFixed(2)}deg) scale3d(1.02,1.02,1.02)`;
+        el.style.transition = 'transform 0.1s ease-out';
+      });
+      el.addEventListener('mouseleave', () => {
+        el.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) scale3d(1,1,1)';
+        el.style.transition = 'transform 0.4s cubic-bezier(0.16,1,0.3,1)';
+      });
+    }
+    document.querySelectorAll('.tilt-card').forEach(c => attachTilt(c));
+
+    // JS MODULE 3: TimelineScrubber
+    (function() {
+      const ruler = document.getElementById('tlRuler');
+      const playhead = document.getElementById('tlPlayhead');
+      const dot = document.getElementById('tlDot');
+      const timecode = document.getElementById('tlTimecode');
+      const diamonds = document.querySelectorAll('.kf-diamond');
+      if (!ruler || !playhead) return;
+      
+      let dragging = false;
+      let progress = 0.35;
+      
+      function setProgress(p) {
+        progress = Math.max(0, Math.min(1, p));
+        playhead.style.left = (progress * 100) + '%';
+        if (dot) dot.style.left = (12 + progress * 76) + '%';
+        const totalSec = Math.round(progress * 10);
+        const frames = Math.round(progress * 240) % 24;
+        if (timecode) timecode.textContent = `[00:00:0${totalSec}:${String(frames).padStart(2,'0')}]`;
+        const positions = [0.12, 0.38, 0.63, 0.88];
+        diamonds.forEach((d, i) => {
+          const dist = Math.abs(progress - positions[i]);
+          d.classList.toggle('active', dist < 0.07);
+        });
+      }
+      
+      ruler.addEventListener('mousedown', e => {
+        dragging = true;
+        const r = ruler.getBoundingClientRect();
+        setProgress((e.clientX - r.left) / r.width);
+      });
+      document.addEventListener('mousemove', e => {
+        if (!dragging) return;
+        const r = ruler.getBoundingClientRect();
+        setProgress((e.clientX - r.left) / r.width);
+      });
+      document.addEventListener('mouseup', () => { dragging = false; });
+      setProgress(0.35);
+    })();
+
+    // JS MODULE 4: TimeSaverCalculator
+    (function() {
+      const slider = document.getElementById('clipsSlider');
+      const clipsVal = document.getElementById('clipsVal');
+      const manualTime = document.getElementById('manualTime');
+      const manualHours = document.getElementById('manualHours');
+      const autoTime = document.getElementById('autoTime');
+      const autoSave = document.getElementById('autoSave');
+      if (!slider) return;
+      
+      function update() {
+        const clips = parseInt(slider.value);
+        const manual = clips * 25;
+        const auto = Math.round(clips * 0.5);
+        const save = Math.round((1 - auto / manual) * 100);
+        if (clipsVal) clipsVal.textContent = clips;
+        if (manualTime) manualTime.textContent = manual + ' хв';
+        if (manualHours) manualHours.textContent = '≈ ' + (manual/60).toFixed(1) + ' год / тиж';
+        if (autoTime) autoTime.textContent = auto + ' хв';
+        if (autoSave) autoSave.textContent = save + '% економія';
+      }
+      slider.addEventListener('input', update);
+      update();
+    })();
+
+    // JS MODULE 5: Custom Video Player
+    (function() {
+      const video = document.getElementById('mainVideo');
+      const playBtn = document.getElementById('playerPlayBtn');
+      const fill = document.getElementById('playerFill');
+      const progress = document.getElementById('playerProgress');
+      const timeEl = document.getElementById('playerTime');
+      const overlay = document.getElementById('playerOverlay');
+      if (!video || !playBtn) return;
+      
+      function formatTime(s) {
+        const m = Math.floor(s / 60);
+        return m + ':' + String(Math.floor(s % 60)).padStart(2, '0');
+      }
+      
+      playBtn.addEventListener('click', () => {
+        if (video.paused) { video.play(); playBtn.textContent = '⏸'; }
+        else { video.pause(); playBtn.textContent = '▶'; }
+      });
+      
+      video.addEventListener('timeupdate', () => {
+        if (!video.duration) return;
+        const p = video.currentTime / video.duration * 100;
+        if (fill) fill.style.width = p + '%';
+        if (timeEl) timeEl.textContent = formatTime(video.currentTime);
+      });
+      
+      if (progress) {
+        progress.addEventListener('click', e => {
+          const r = progress.getBoundingClientRect();
+          video.currentTime = ((e.clientX - r.left) / r.width) * video.duration;
+        });
+      }
+      
+      document.querySelectorAll('.spd').forEach(btn => {
+        btn.addEventListener('click', () => {
+          video.playbackRate = parseFloat(btn.dataset.speed);
+          document.querySelectorAll('.spd').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+        });
+      });
+      
+      const wrapper = document.getElementById('mainPlayerWrap');
+      if (wrapper) {
+        wrapper.addEventListener('mouseenter', () => { if(overlay) overlay.style.opacity = '1'; });
+        wrapper.addEventListener('mouseleave', () => { if(overlay && video.paused) overlay.style.opacity = '1'; else if(overlay) overlay.style.opacity = '0'; });
+      }
+    })();
+
+    // JS MODULE 6: Canvas Tracker
+    class SpringPoint {
+      constructor(x, y) {
+        this.x = x; this.y = y;
+        this.targetX = x; this.targetY = y;
+        this.vx = 0; this.vy = 0;
+        this.stiffness = 0.08; this.damping = 0.82;
+      }
+      update() {
+        const ax = (this.targetX - this.x) * this.stiffness;
+        const ay = (this.targetY - this.y) * this.stiffness;
+        this.vx = (this.vx + ax) * this.damping;
+        this.vy = (this.vy + ay) * this.damping;
+        this.x += this.vx; this.y += this.vy;
+      }
+    }
+
+    class CanvasTracker {
+      constructor(canvasEl) {
+        this.canvas = canvasEl;
+        this.ctx = canvasEl.getContext('2d');
+        this.mode = 'attach';
+        this.t = 0;
+        this.locked = false;
+        this.trail = [];
+        this.mouse = { x: 0, y: 0 };
+        this.featurePoints = [];
+        this.animId = null;
+        this.active = false;
+        this.init();
+      }
+      
+      init() {
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        const rect = this.canvas.parentElement.getBoundingClientRect();
+        this.canvas.width = rect.width * dpr;
+        this.canvas.height = rect.height * dpr;
+        this.ctx.scale(dpr, dpr);
+        this.W = rect.width;
+        this.H = rect.height;
+        
+        this.reticle = new SpringPoint(this.W / 2, this.H / 2);
+        this.target = { x: this.W / 2, y: this.H / 2 };
+        
+        this.featurePoints = Array.from({ length: 35 }, () => ({
+          ox: (Math.random() - 0.5) * 70, oy: (Math.random() - 0.5) * 50, jx: 0, jy: 0
+        }));
+        
+        this.canvas.addEventListener('mousemove', (e) => {
+          const r = this.canvas.getBoundingClientRect();
+          this.mouse.x = e.clientX - r.left;
+          this.mouse.y = e.clientY - r.top;
+          this.reticle.targetX = this.mouse.x;
+          this.reticle.targetY = this.mouse.y;
+        });
+        
+        this.canvas.addEventListener('click', () => {
+          this.locked = !this.locked;
+          document.getElementById('hudStatus').textContent = this.locked ? 'LOCKED ◆' : 'SCANNING';
+        });
+      }
+      
+      update() {
+        this.t += 0.016;
+        this.target.x = this.W / 2 + Math.sin(this.t * 0.7) * (this.W * 0.28);
+        this.target.y = this.H / 2 + Math.sin(this.t * 0.45 + 1) * (this.H * 0.22);
+        
+        this.reticle.update();
+        
+        this.trail.push({ x: this.target.x, y: this.target.y });
+        if (this.trail.length > 30) this.trail.shift();
+        
+        this.featurePoints.forEach(p => {
+          p.jx += (Math.random() - 0.5) * 1.2; p.jy += (Math.random() - 0.5) * 1.2;
+          p.jx *= 0.88; p.jy *= 0.88;
+        });
+        
+        const hud = document.getElementById('hudCoords');
+        if (hud) hud.textContent = `X: ${this.target.x.toFixed(1).padStart(5, '0')} Y: ${this.target.y.toFixed(1).padStart(5, '0')}`;
+      }
+      
+      drawGrid(ctx, W, H) {
+        ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+        ctx.lineWidth = 0.5;
+        const step = 40;
+        for (let x = 0; x < W; x += step) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+        for (let y = 0; y < H; y += step) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+      }
+      
+      drawTrackingBox(ctx, x, y, w, h, color) {
+        const L = 14;
+        ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.beginPath();
+        ctx.moveTo(x, y + L); ctx.lineTo(x, y); ctx.lineTo(x + L, y);
+        ctx.moveTo(x + w - L, y); ctx.lineTo(x + w, y); ctx.lineTo(x + w, y + L);
+        ctx.moveTo(x + w, y + h - L); ctx.lineTo(x + w, y + h); ctx.lineTo(x + w - L, y + h);
+        ctx.moveTo(x + L, y + h); ctx.lineTo(x, y + h); ctx.lineTo(x, y + h - L);
+        ctx.stroke();
+        ctx.strokeStyle = color + '88'; ctx.lineWidth = 0.8; ctx.beginPath();
+        ctx.moveTo(x + w/2 - 6, y + h/2); ctx.lineTo(x + w/2 + 6, y + h/2);
+        ctx.moveTo(x + w/2, y + h/2 - 6); ctx.lineTo(x + w/2, y + h/2 + 6);
+        ctx.stroke();
+      }
+      
+      drawTrail(ctx) {
+        if (this.trail.length < 2) return;
+        ctx.strokeStyle = 'rgba(212,255,0,0.35)'; ctx.lineWidth = 1.5; ctx.setLineDash([3, 3]); ctx.beginPath();
+        ctx.moveTo(this.trail[0].x, this.trail[0].y);
+        for (let i = 1; i < this.trail.length; i++) ctx.lineTo(this.trail[i].x, this.trail[i].y);
+        ctx.stroke(); ctx.setLineDash([]);
+      }
+      
+      drawFeaturePoints(ctx, cx, cy) {
+        ctx.fillStyle = 'rgba(0,240,255,0.7)';
+        this.featurePoints.forEach(p => {
+          ctx.beginPath(); ctx.arc(cx + p.ox + p.jx, cy + p.oy + p.jy, 1.5, 0, Math.PI * 2); ctx.fill();
+        });
+      }
+      
+      drawReticle(ctx, x, y) {
+        const R1 = 18, R2 = 28;
+        ctx.strokeStyle = '#d4ff00'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(x, y, R2, 0.2, Math.PI * 2 - 0.2); ctx.stroke();
+        ctx.strokeStyle = 'rgba(212,255,0,0.5)'; ctx.beginPath(); ctx.arc(x, y, R1, 0, Math.PI * 2); ctx.stroke();
+        ctx.strokeStyle = '#d4ff00'; ctx.lineWidth = 1; const arms = 10; ctx.beginPath();
+        ctx.moveTo(x - R2 - arms, y); ctx.lineTo(x - R1, y); ctx.moveTo(x + R1, y); ctx.lineTo(x + R2 + arms, y);
+        ctx.moveTo(x, y - R2 - arms); ctx.lineTo(x, y - R1); ctx.moveTo(x, y + R1); ctx.lineTo(x, y + R2 + arms); ctx.stroke();
+      }
+      
+      drawAttachedBadge(ctx, tx, ty, vx) {
+        const bw = 90, bh = 26; const bx = tx + 30 + Math.abs(vx) * 2; const by = ty - 50; const angle = vx * 0.04;
+        ctx.save(); ctx.translate(bx + bw/2, by + bh/2); ctx.rotate(angle); ctx.translate(-(bx + bw/2), -(by + bh/2));
+        ctx.fillStyle = 'rgba(212,255,0,0.15)'; ctx.strokeStyle = '#d4ff00'; ctx.lineWidth = 1; ctx.beginPath();
+        if(ctx.roundRect) ctx.roundRect(bx, by, bw, bh, 4); else ctx.rect(bx, by, bw, bh); // fallback
+        ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#d4ff00'; ctx.font = '500 10px "JetBrains Mono", monospace'; ctx.textAlign = 'center';
+        ctx.fillText('@target_label', bx + bw/2, by + 16);
+        ctx.strokeStyle = 'rgba(212,255,0,0.5)'; ctx.lineWidth = 0.8; ctx.setLineDash([3,3]); ctx.beginPath();
+        ctx.moveTo(tx + 10, ty - 10); ctx.lineTo(bx, by + bh/2); ctx.stroke(); ctx.setLineDash([]); ctx.restore();
+      }
+      
+      draw() {
+        const { ctx, W, H } = this;
+        ctx.clearRect(0, 0, W, H);
+        this.drawGrid(ctx, W, H);
+        
+        const tx = this.target.x, ty = this.target.y;
+        const prevVx = this.trail.length > 1 ? this.trail[this.trail.length-1].x - this.trail[this.trail.length-2].x : 0;
+        const bw = 80, bh = 56;
+        
+        if (this.mode === 'lockon') {
+          const cx = W/2, cy = H/2; const offX = cx - tx, offY = cy - ty;
+          ctx.save(); ctx.translate(offX, offY); this.drawTrail(ctx); this.drawFeaturePoints(ctx, tx, ty); ctx.restore();
+          this.drawTrackingBox(ctx, cx - bw/2, cy - bh/2, bw, bh, '#00f0ff'); this.drawReticle(ctx, cx, cy);
+          ctx.fillStyle = '#00f0ff'; ctx.font = '500 9px "JetBrains Mono", monospace'; ctx.textAlign = 'center';
+          ctx.fillText('LOCK-ON ◆', cx, cy + bh/2 + 14);
+        } else {
+          this.drawTrail(ctx); this.drawFeaturePoints(ctx, tx, ty);
+          this.drawTrackingBox(ctx, tx - bw/2, ty - bh/2, bw, bh, this.locked ? '#d4ff00' : 'rgba(212,255,0,0.6)');
+          if (this.locked) this.drawAttachedBadge(ctx, tx, ty, prevVx);
+          this.drawReticle(ctx, this.reticle.x, this.reticle.y);
+        }
+      }
+      
+      start() {
+        this.active = true;
+        const loop = () => { if (!this.active) return; this.update(); this.draw(); this.animId = requestAnimationFrame(loop); };
+        loop();
+      }
+      stop() { this.active = false; if (this.animId) cancelAnimationFrame(this.animId); }
+    }
+
+    const c = document.getElementById('trackerCanvas');
+    if (c) {
+      const tracker = new CanvasTracker(c);
+      tracker.start();
+      document.querySelectorAll('.mode-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+          tracker.mode = tab.getAttribute('data-mode');
+        });
+      });
+      window.addEventListener('resize', () => { tracker.init(); tracker.draw(); });
+    }
+  </script>
+</body>
+</html>
