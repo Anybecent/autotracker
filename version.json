@@ -1,6 +1,6 @@
 {
   "version": "1.1.0",
-  "releaseDate": "2026-10-13",
+  "releaseDate": "2026-10-14",
   "patchUrl": "https://anybecent.github.io/autotracker/releases/AutoTracker_Update.zip",
   "downloadUrl": "https://anybecent.github.io/autotracker/releases/AutoTracker_Update.zip",
   "changelog_ua": "• Додано вбудовану систему автооновлення з підтвердженням користувача\n• Покращення стабільності та швидкодії трекінгу",
