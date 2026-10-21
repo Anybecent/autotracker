@@ -1,8 +1,8 @@
 {
-  "version": "1.1.0",
-  "releaseDate": "2026-10-20",
+  "version": "1.1.1",
+  "releaseDate": "2026-10-21",
   "patchUrl": "https://anybecent.github.io/autotracker/releases/AutoTracker_Update.zip",
   "downloadUrl": "https://anybecent.github.io/autotracker/releases/AutoTracker_Update.zip",
-  "changelog_ua": "• Додано вбудовану систему автооновлення з підтвердженням користувача\n• Покращення стабільності та швидкодії трекінгу",
-  "changelog_en": "• Added built-in auto-updater with user confirmation dialog\n• Tracking stability and performance improvements"
+  "changelog_ua": "• Виправлено завантаження кліпів з таймлайну на macOS (NO_CLIP_FOUND)\n• Синхронізовано новий інтерфейс (3 розкладки, палітри, експорт) та очищення кешу CEP на macOS",
+  "changelog_en": "• Fixed timeline clip loading on macOS (NO_CLIP_FOUND)\n• Synchronized new UI (3 layouts, color palettes, export modal) and macOS CEP cache cleanup"
 }
