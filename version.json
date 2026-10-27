@@ -1,8 +1,8 @@
 {
-  "version": "1.1.2",
-  "releaseDate": "2026-10-25",
+  "version": "1.1.6",
+  "releaseDate": "2026-10-27",
   "patchUrl": "https://anybecent.github.io/autotracker/releases/AutoTracker_Update.zip",
   "downloadUrl": "https://anybecent.github.io/autotracker/releases/AutoTracker_Update.zip",
-  "changelog_ua": "• Виправлено активацію ліцензійного ключа Gumroad\n• Один ключ діє на одному ПК; для перенесення натисніть «Деактивувати» на старому комп'ютері\n• Прибрано застарілі офлайн-ключі та підтримку Lemon Squeezy\n• Усі покращення v1.1.1 (пресети, Retrack, резервні копії ключових кадрів, підказки) збережено",
-  "changelog_en": "• Fixed Gumroad license key activation\n• One key now works on one PC; click Deactivate on the old computer to transfer it\n• Removed legacy offline keys and Lemon Squeezy support\n• All v1.1.1 improvements (presets, Retrack, keyframe backups, tips) retained"
+  "changelog_ua": "• Виправлено розтягування зменшеного шару по ширині в режимі «Прив'язка шару» при трекінгу зі Scale: Uniform Scale більше не вимикається через дрібний шум у даних трекера\n• Якщо Scale Width не прийняв ключі, Uniform Scale автоматично повертається\n• Версію показано з реально завантаженої копії плагіна",
+  "changelog_en": "• Fixed a scaled-down layer being stretched in width in Attach Layer mode when tracking Scale: Uniform Scale is no longer switched off by tiny noise in tracker data\n• If Scale Width does not accept keyframes, Uniform Scale is restored automatically\n• The version is read from the copy actually loaded"
 }
