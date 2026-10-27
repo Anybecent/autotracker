@@ -1,8 +1,8 @@
 {
-  "version": "1.1.6",
+  "version": "1.1.7",
   "releaseDate": "2026-10-27",
   "patchUrl": "https://anybecent.github.io/autotracker/releases/AutoTracker_Update.zip",
   "downloadUrl": "https://anybecent.github.io/autotracker/releases/AutoTracker_Update.zip",
-  "changelog_ua": "• Виправлено розтягування зменшеного шару по ширині в режимі «Прив'язка шару» при трекінгу зі Scale: Uniform Scale більше не вимикається через дрібний шум у даних трекера\n• Якщо Scale Width не прийняв ключі, Uniform Scale автоматично повертається\n• Версію показано з реально завантаженої копії плагіна",
-  "changelog_en": "• Fixed a scaled-down layer being stretched in width in Attach Layer mode when tracking Scale: Uniform Scale is no longer switched off by tiny noise in tracker data\n• If Scale Width does not accept keyframes, Uniform Scale is restored automatically\n• The version is read from the copy actually loaded"
+  "changelog_ua": "• Виправлено розтягування шару по ширині в режимі «Прив'язка шару»: шар, який після старих версій лишився з вимкненим Uniform Scale і застарілою шириною, при трекінгу зі Scale повертається до пропорційного\n• У журналі панелі показується версія скрипта Premiere; якщо вона не збігається з версією панелі — з'являється попередження",
+  "changelog_en": "• Fixed a layer being stretched in width in Attach Layer mode: a layer left by older versions with Uniform Scale off and a stale width is returned to proportional when tracking Scale\n• The panel log shows the Premiere script version and warns if it does not match the panel version"
 }
